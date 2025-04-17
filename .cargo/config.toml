@@ -1,0 +1,5 @@
+[target.x86_64-apple-darwin]
+linker = "minimal-importer-bundle/scripts/ld-wrapper.sh"
+
+[target.aarch64-apple-darwin]
+linker = "minimal-importer-bundle/scripts/ld-wrapper.sh"

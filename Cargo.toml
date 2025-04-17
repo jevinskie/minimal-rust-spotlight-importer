@@ -1,0 +1,3 @@
+[workspace]
+resolver = "2"
+members = ["minimal-importer", "minimal-importer-app", "minimal-importer-bundle", "minimal-importer-util"]
