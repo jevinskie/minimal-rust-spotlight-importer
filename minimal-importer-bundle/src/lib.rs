@@ -106,7 +106,7 @@ pub unsafe extern "C" fn MetadataImporterPluginFactory(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn ReturnCFString() -> *mut CFString {
-    let s = "hello";
+    let s = "hellooooooooooooo";
     let r = unsafe {
         CFStringCreateWithBytes(
             kCFAllocatorDefault,
@@ -118,7 +118,8 @@ pub unsafe extern "C" fn ReturnCFString() -> *mut CFString {
     }
     .unwrap();
     println!("r: {r:#?} {r:#} {r:?}");
-    let r2 = Retained::into_raw(r.into());
+    let rx = unsafe { Retained::retain(Retained::into_raw(r.into())) }.unwrap();
+    let r2 = Retained::into_raw(rx.into());
     println!("r2: {r2:#?} {r2:?}");
     r2
 }
