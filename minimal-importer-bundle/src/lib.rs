@@ -6,8 +6,9 @@ use core::ffi::c_void;
 use libc::{c_char, c_ulong};
 use objc2::rc::Retained;
 use objc2_core_foundation::{
-    CFEqual, CFMutableDictionary, CFRetained, CFString, CFStringCreateWithBytes, CFStringEncoding,
-    CFStringEncodings, CFType, CFUUID, CFUUIDBytes, kCFAllocatorDefault,
+    CFEqual, CFMutableDictionary, CFRetained, CFString, CFStringBuiltInEncodings,
+    CFStringCreateWithBytes, CFStringEncoding, CFStringEncodings, CFType, CFUUID, CFUUIDBytes,
+    kCFAllocatorDefault,
 };
 use std::{
     ffi::CStr,
@@ -106,13 +107,13 @@ pub unsafe extern "C" fn MetadataImporterPluginFactory(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn ReturnCFString() -> *mut CFString {
-    let s = "hellooooooooooooo";
+    let s = "hellooo";
     let r = unsafe {
         CFStringCreateWithBytes(
             kCFAllocatorDefault,
             s.as_ptr(),
             s.len() as isize,
-            0x08000100,
+            CFStringBuiltInEncodings::EncodingUTF8.0,
             false,
         )
     }

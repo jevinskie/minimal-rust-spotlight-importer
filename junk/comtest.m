@@ -33,6 +33,7 @@ int main(int argc, const char **argv) {
         // printf("hcfstr isobjc: %d\n", isobjc);
         printf("hcfstr: %p\n", hcfstr);
         NSLog(@"NSLOG hcfstr: %@", hcfstr);
+        CFShow(hcfstr);
         const char *hcstr = CFStringGetCStringPtr(hcfstr, kCFStringEncodingUTF8);
         printf("hcstr: '%s'\n", hcstr);
         void *h = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL | RTLD_FIRST);
@@ -46,6 +47,7 @@ int main(int argc, const char **argv) {
         assert(rcfs);
         CFStringRef rs = rcfs();
         printf("rs: %p\n", rs);
+        CFShow(rs);
         printf("CFGetRetainCount(rs): %lu\n", CFGetRetainCount(rs));
         NSLog(@"NSLOG rs: %@", rs);
         // isobjc = CF_IS_OBJC(CFStringGetTypeID(), rs);
