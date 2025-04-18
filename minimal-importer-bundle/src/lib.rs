@@ -5,9 +5,10 @@
 
 use core::ffi::c_void;
 use objc2_core_foundation::{
-    CFAllocator, CFMutableDictionary, CFPlugInAddInstanceForFactory, CFRetained, CFString,
-    CFStringBuiltInEncodings, CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes,
-    HRESULT, LPVOID, REFIID, ULONG, kCFAllocatorDefault,
+    CFAllocator, CFMutableDictionary, CFPlugInAddInstanceForFactory,
+    CFPlugInRemoveInstanceForFactory, CFRetained, CFString, CFStringBuiltInEncodings,
+    CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes, HRESULT, LPVOID, REFIID,
+    ULONG, kCFAllocatorDefault,
 };
 use std::mem;
 use std::ops::Deref;
@@ -80,6 +81,8 @@ unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -
         println!("com_release drop this: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
         drop(ptb);
         println!("com_release drop fuuid: {fuuid:#?}");
+        unsafe { CFPlugInRemoveInstanceForFactory(Some(&fuuid)) };
+        drop(fuuid);
         0
     }
 }
