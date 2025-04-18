@@ -4,6 +4,7 @@
 #![feature(box_as_ptr)]
 
 use core::ffi::c_void;
+use std::ops::Deref;
 use objc2_core_foundation::{
     CFAllocator, CFMutableDictionary, CFPlugInAddInstanceForFactory, CFRetained, CFString,
     CFStringBuiltInEncodings, CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes,
@@ -115,11 +116,15 @@ fn kMDImporterTypeID() -> CFRetained<CFUUID> {
     .unwrap()
 }
 
+fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
+    unsafe{CFUUIDGetConstantUUIDWithBytes(kCFAllocatorDefault, 0x93, 0x36, 0xd6, 0xdb, 0x18, 0xf0, 0x46, 0x15, 0x89, 0xe4, 0x7a, 0x12, 0x34, 0xbd, 0xaa, 0x7b)}.unwrap()
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     allocator: *mut CFAllocator,
     inFactoryID: *mut CFUUID,
-) -> *mut MDImporterInterfaceStruct {
+) -> *mut MetadataImporterPluginType {
     println!("passed allocator: {allocator:#?}");
     println!("passed uuid ptr: {inFactoryID:#?}");
     let uuid = unsafe { CFRetained::retain(NonNull::new(inFactoryID).unwrap()) };
@@ -133,10 +138,20 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
             release: Some(dummy_release),
             importer_import_data: Some(importer_import_data_impl),
         };
+        let mut ifu = MetadataImporterPluginFactoryUUID();
+        // let ifu_ptr = CFRetained::into_raw(ifu);
+        // let mut bu = Box::new(CFUUID::from(CFRetained::clone_from(&mut ifu)));
+
+        let fid_ptr: *mut CFUUID = Box::as_mut_ptr(&mut ifu.to_owned());
+        // mem::forget(bu);
         let mut br = Box::new(s);
         let ptr = Box::as_mut_ptr(&mut br);
         mem::forget(br);
-        ptr
+        let pt = MetadataImporterPluginType{conduitInterface: ptr, factoryID: fid_ptr, refCount: 0};
+        let mut bp = Box::new(pt);
+        let bp_ptr = Box::as_mut_ptr(&mut bp);
+        mem::forget(bp);
+        bp_ptr
     } else {
         ptr::null_mut()
     }
