@@ -1,0 +1,107 @@
+#include <CoreFoundation/CFArray.h>
+#include <CoreFoundation/CFBase.h>
+#include <CoreFoundation/CFDictionary.h>
+#include <CoreFoundation/CFPlugIn.h>
+#import <CoreFoundation/CFPlugInCOM.h>
+#include <CoreFoundation/CFUUID.h>
+#import <CoreFoundation/CoreFoundation.h>
+#import <CoreServices/CoreServices.h>
+#import <Foundation/Foundation.h>
+
+#include <dlfcn.h>
+#include <stdio.h>
+
+#undef NDEBUG
+#include <assert.h>
+
+/*!
+        @constant kMDImporterTypeID The importer only loads CFPlugIns of type
+        kMDImporterTypeID - 8B08C4BF-415B-11D8-B3F9-0003936726FC
+
+        @constant kMDImporterInterfaceID Importers must implement this
+        Interface - 6EBC27C4-899C-11D8-84A3-0003936726FC
+
+        @constant kMDExporterInterfaceID Exporters can optionaly also implement this
+        Interface - B41C6074-7DFB-4057-969D-31C8E861A8D4
+
+        @constant kMDImporterURLInterfaceID Importers can optionaly also implement this
+        Interface - B41C6074-7DFB-4057-969D-31C8E861A8D4
+
+        @constant kMDImporterBundleWrapperURLInterfaceID Importers can optionaly also implement this
+        Interface - CF76374B-0C83-47C5-AB2F-7B950884670A
+
+*/
+
+#define kMinimalImporterUUID                                                                      \
+    CFUUIDGetConstantUUIDWithBytes(kCFAllocatorDefault, 0x93, 0x36, 0xd6, 0xdb, 0x18, 0xf0, 0x46, \
+                                   0x15, 0x89, 0xe4, 0x7a, 0x12, 0x34, 0xbd, 0xaa, 0x7b)
+
+#define kDsymImporterUUID                                                                         \
+    CFUUIDGetConstantUUIDWithBytes(kCFAllocatorDefault, 0xfc, 0x09, 0x57, 0xc6, 0x10, 0xa1, 0x46, \
+                                   0x9b, 0xaa, 0x54, 0x5a, 0x9f, 0xfe, 0x71, 0x8a, 0x93)
+
+typedef void *(*queryintf_t)(void *thisPointer, REFIID iid, LPVOID *ppv);
+typedef void *(*factory_t)(CFAllocatorRef allocator, CFUUIDRef typeID);
+typedef CFStringRef (*ret_cfstr_t)(void);
+
+typedef struct MetadataImporterPlugin_s {
+    MDImporterInterfaceStruct *conduitInterface;
+    CFUUIDRef factoryID;
+    UInt32 refCount;
+} MetadataImporterPlugin_t;
+
+int main(int argc, const char **argv) {
+    if (argc != 3) {
+        return 1;
+    }
+    @autoreleasepool {
+        NSURL *bndl_url = [NSURL fileURLWithPath:@(argv[1]) isDirectory:YES];
+        assert(bndl_url);
+        printf("bndl_url: %s\n", bndl_url.absoluteString.UTF8String);
+
+        NSString *file_to_import = @(argv[2]);
+        assert(file_to_import);
+        printf("file_to_import: %s\n", file_to_import.UTF8String);
+
+        CFPlugInRef plugin = CFPlugInCreate(kCFAllocatorDefault, (__bridge CFURLRef)bndl_url);
+        assert(plugin);
+        CFShow(plugin);
+
+        NSArray *factories = CFBridgingRelease(
+            CFPlugInFindFactoriesForPlugInTypeInPlugIn(kMDImporterTypeID, plugin));
+        NSLog(@"factories: %@", factories);
+        assert(factories.count == 1);
+
+        IUnknownVTbl **iunknown;
+        //  Use the factory ID to get an IUnknown interface. Here the plug-in code is loaded.
+        iunknown = (IUnknownVTbl **)CFPlugInInstanceCreate(
+            kCFAllocatorDefault, (__bridge CFUUIDRef)factories[0], kMDImporterTypeID);
+        printf("iunknown: %p\n", iunknown);
+        printf("iunknown->QueryInterface: %p\n", (*iunknown)->QueryInterface);
+        assert(iunknown);
+        MDImporterInterfaceStruct **mdip = NULL;
+        HRESULT hres;
+        hres = (*iunknown)->QueryInterface(iunknown, CFUUIDGetUUIDBytes(kMDImporterInterfaceID),
+                                           (LPVOID *)(&mdip));
+        printf("hres: %d %x mdip: %p\n", hres, (uint32_t)hres, mdip);
+        if (mdip) {
+            printf("*mdip: %p\n", *mdip);
+        }
+        (*iunknown)->Release(iunknown);
+        assert(mdip);
+        MDImporterInterfaceStruct *mdi = *mdip;
+        NSMutableDictionary *dict      = NSMutableDictionary.new;
+        NSLog(@"dict before: %@", dict);
+        NSString *uti      = @"com.apple.xcode.dsym";
+        Boolean import_res = mdi->ImporterImportData(mdi, (__bridge CFMutableDictionaryRef)dict,
+                                                     (__bridge CFStringRef)uti,
+                                                     (__bridge CFStringRef)file_to_import);
+        printf("import_res: %d\n", import_res);
+        NSLog(@"dict after: %@", dict);
+        mdi->Release(mdi);
+        printf("mdi final release done\n");
+        CFRelease(plugin);
+        printf("released plugin\n");
+    }
+    return 0;
+}

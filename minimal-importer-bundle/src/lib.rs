@@ -42,6 +42,31 @@ fn kMDImporterTypeID() -> CFRetained<CFUUID> {
     .unwrap()
 }
 
+fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
+    unsafe {
+        CFUUIDGetConstantUUIDWithBytes(
+            kCFAllocatorDefault,
+            0x6E,
+            0xBC,
+            0x27,
+            0xC4,
+            0x89,
+            0x9C,
+            0x11,
+            0xD8,
+            0x84,
+            0xAE,
+            0x00,
+            0x03,
+            0x93,
+            0x67,
+            0x26,
+            0xFC,
+        )
+    }
+    .unwrap()
+}
+
 fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
     unsafe {
         CFUUIDGetConstantUUIDWithBytes(
