@@ -57,10 +57,14 @@ int main(int argc, const char **argv) {
         printf("cfdesc: '%s'\n", cfdesc_cstr);
         const char *rsc = CFStringGetCStringPtr(rs, kCFStringEncodingUTF8);
         printf("rsc: '%s'\n", rsc);
-        // void *p = NULL;
-        // CFUUIDBytes unkb = CFUUIDGetUUIDBytes(IUnknownUUID);
-        // void *r = qif(NULL, unkb, &p);
-        // printf("r: %p\n", r);
+        void *p          = NULL;
+        CFUUIDBytes unkb = CFUUIDGetUUIDBytes(IUnknownUUID);
+        void *r          = ff(kCFAllocatorDefault, IUnknownUUID);
+        printf("r: %p p: %p\n", r, p);
+        void **pr = (void **)r;
+        for (int i = 0; i < 4; ++i) {
+            printf("pr[%d] = %p\n", i, pr[i]);
+        }
     }
     return 0;
 }

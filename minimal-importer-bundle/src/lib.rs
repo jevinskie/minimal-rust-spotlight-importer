@@ -1,6 +1,7 @@
 // avoid pre-commit shebang confusion
 #![feature(extern_types)]
 #![feature(no_sanitize)]
+#![feature(box_as_ptr)]
 
 use core::ffi::c_void;
 use libc::{c_char, c_ulong};
@@ -10,6 +11,7 @@ use objc2_core_foundation::{
     CFStringCreateWithBytes, CFStringEncoding, CFStringEncodings, CFType, CFUUID, CFUUIDBytes,
     kCFAllocatorDefault,
 };
+use std::mem;
 use std::{
     ffi::CStr,
     fs::File,
@@ -101,8 +103,17 @@ fn AllocMetadataImporterPluginType(inFactoryID: CFUUID) {}
 pub unsafe extern "C" fn MetadataImporterPluginFactory(
     _type_id: *const c_void,
 ) -> *mut MDImporterInterfaceStruct {
-    INTERFACE._reserved = ptr::null_mut();
-    &raw mut INTERFACE
+    let s = MDImporterInterfaceStruct {
+        _reserved: ptr::null_mut(),
+        query_interface: Some(dummy_query_interface),
+        add_ref: Some(dummy_add_ref),
+        release: Some(dummy_release),
+        importer_import_data: Some(importer_import_data_impl),
+    };
+    let mut br = Box::<MDImporterInterfaceStruct>::new(s);
+    let ptr: *mut MDImporterInterfaceStruct = Box::<MDImporterInterfaceStruct>::as_mut_ptr(&mut br);
+    mem::forget(br);
+    ptr
 }
 
 #[unsafe(no_mangle)]
