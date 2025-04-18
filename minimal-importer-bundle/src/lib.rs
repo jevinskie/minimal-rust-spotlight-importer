@@ -57,9 +57,14 @@ unsafe extern "C-unwind" fn importer_import_data_impl(
     uti: *mut CFString,
     path: *mut CFString,
 ) -> bool {
-    let path_cfstr = unsafe { CFRetained::<CFString>::retain(NonNull::new(path).unwrap()) };
+    println!("importer_import_data_impl this: {this:#?}");
+    let path_cfstr = unsafe { CFRetained::retain(NonNull::new(path).unwrap()) };
     let path_str = path_cfstr.to_string();
     println!("importer_import_data_impl path: {path_str}");
+    let attro = unsafe { CFRetained::retain(NonNull::new(attr).unwrap()) };
+    println!("importer_import_data_impl attr: {attro:#?}");
+    let utio = unsafe { CFRetained::retain(NonNull::new(uti).unwrap()) };
+    println!("importer_import_data_impl uti: {utio:#?}");
 
     // if let Ok(file) = File::open(&path_str) {
     //     let mut reader = BufReader::new(file);
@@ -119,7 +124,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
 ) -> *mut MDImporterInterfaceStruct {
     println!("passed allocator: {allocator:#?}");
     println!("passed uuid ptr: {inFactoryID:#?}");
-    let uuid = unsafe { CFRetained::<CFUUID>::retain(NonNull::new(inFactoryID).unwrap()) };
+    let uuid = unsafe { CFRetained::retain(NonNull::new(inFactoryID).unwrap()) };
     let importer_uuid = kMDImporterTypeID();
     println!("passed uuid: {uuid:#?} importer uuid: {importer_uuid:#?}");
     if uuid == importer_uuid {
@@ -130,7 +135,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
             release: Some(dummy_release),
             importer_import_data: Some(importer_import_data_impl),
         };
-        let mut br = Box::<MDImporterInterfaceStruct>::new(s);
+        let mut br = Box::new(s);
         let ptr: *mut MDImporterInterfaceStruct =
             Box::<MDImporterInterfaceStruct>::as_mut_ptr(&mut br);
         mem::forget(br);

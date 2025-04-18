@@ -23,43 +23,39 @@ int main(int argc, const char **argv) {
         return 1;
     }
     @autoreleasepool {
-        unsigned char hb[] = {'h', 'e', 'l', 'l', 'o'};
-        CFStringRef hcfstr = CFStringCreateWithBytes(kCFAllocatorDefault, hb, sizeof(hb),
-                                                     kCFStringEncodingUTF8, false);
+        // unsigned char hb[] = {'h', 'e', 'l', 'l', 'o'};
+        // CFStringRef hcfstr = CFStringCreateWithBytes(kCFAllocatorDefault, hb, sizeof(hb),
+        //                                              kCFStringEncodingUTF8, false);
         // bool isobjc = CF_IS_OBJC(CFStringGetTypeID(), hcfstr);
         // printf("hcfstr isobjc: %d\n", isobjc);
-        printf("hcfstr: %p\n", hcfstr);
-        NSLog(@"NSLOG hcfstr: %@", hcfstr);
-        CFShow(hcfstr);
-        const char *hcstr = CFStringGetCStringPtr(hcfstr, kCFStringEncodingUTF8);
-        printf("hcstr: '%s'\n", hcstr);
+        // printf("hcfstr: %p\n", hcfstr);
+        // NSLog(@"NSLOG hcfstr: %@", hcfstr);
+        // CFShow(hcfstr);
+        // const char *hcstr = CFStringGetCStringPtr(hcfstr, kCFStringEncodingUTF8);
+        // printf("hcstr: '%s'\n", hcstr);
+        // ret_cfstr_t rcfs = (ret_cfstr_t)dlsym(h, "ReturnCFString");
+        // assert(rcfs);
+        // CFStringRef rs = rcfs();
+        // printf("rs: %p\n", rs);
+        // CFShow(rs);
+        // printf("CFGetRetainCount(rs): %lu\n", CFGetRetainCount(rs));
+        // NSLog(@"NSLOG rs: %@", rs);
+        // isobjc = CF_IS_OBJC(CFStringGetTypeID(), rs);
+        // printf("rs isobjc: %d\n", isobjc);
+        // CFStringRef cfdesc      = CFCopyDescription(rs);
+        // const char *cfdesc_cstr = CFStringGetCStringPtr(cfdesc, kCFStringEncodingUTF8);
+        // printf("cfdesc: '%s'\n", cfdesc_cstr);
+        // const char *rsc = CFStringGetCStringPtr(rs, kCFStringEncodingUTF8);
+        // printf("rsc: '%s'\n", rsc);
         void *h = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL | RTLD_FIRST);
         assert(h);
         factory_t ff = (factory_t)dlsym(h, "MetadataImporterPluginFactory");
         assert(ff);
         printf("ff: %p\n", ff);
-        void *rff = ff(kCFAllocatorDefault, kMDImporterTypeID);
-        printf("rff: %p\n", rff);
-        ret_cfstr_t rcfs = (ret_cfstr_t)dlsym(h, "ReturnCFString");
-        assert(rcfs);
-        CFStringRef rs = rcfs();
-        printf("rs: %p\n", rs);
-        CFShow(rs);
-        printf("CFGetRetainCount(rs): %lu\n", CFGetRetainCount(rs));
-        NSLog(@"NSLOG rs: %@", rs);
-        // isobjc = CF_IS_OBJC(CFStringGetTypeID(), rs);
-        // printf("rs isobjc: %d\n", isobjc);
-        CFStringRef cfdesc      = CFCopyDescription(rs);
-        const char *cfdesc_cstr = CFStringGetCStringPtr(cfdesc, kCFStringEncodingUTF8);
-        printf("cfdesc: '%s'\n", cfdesc_cstr);
-        const char *rsc = CFStringGetCStringPtr(rs, kCFStringEncodingUTF8);
-        printf("rsc: '%s'\n", rsc);
-        void *p          = NULL;
-        CFUUIDBytes unkb = CFUUIDGetUUIDBytes(IUnknownUUID);
-        void *r          = ff(kCFAllocatorDefault, kMDImporterTypeID);
-        printf("r: %p p: %p\n", r, p);
+        void *r = ff(kCFAllocatorDefault, kMDImporterTypeID);
+        printf("r: %p\n", r);
         void **pr = (void **)r;
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 5; ++i) {
             printf("pr[%d] = %p\n", i, pr[i]);
         }
     }
