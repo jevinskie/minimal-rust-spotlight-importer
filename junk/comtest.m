@@ -1,7 +1,4 @@
-#include <CoreFoundation/CFBase.h>
 #import <CoreFoundation/CFPlugInCOM.h>
-#include <CoreFoundation/CFString.h>
-#include <CoreFoundation/CFUUID.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <CoreServices/CoreServices.h>
 #import <Foundation/Foundation.h>
@@ -59,7 +56,7 @@ int main(int argc, const char **argv) {
         printf("rsc: '%s'\n", rsc);
         void *p          = NULL;
         CFUUIDBytes unkb = CFUUIDGetUUIDBytes(IUnknownUUID);
-        void *r          = ff(kCFAllocatorDefault, IUnknownUUID);
+        void *r          = ff(kCFAllocatorDefault, kMDImporterTypeID);
         printf("r: %p p: %p\n", r, p);
         void **pr = (void **)r;
         for (int i = 0; i < 4; ++i) {
