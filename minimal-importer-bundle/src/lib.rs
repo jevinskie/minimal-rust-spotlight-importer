@@ -35,6 +35,14 @@ pub struct MDImporterInterfaceStruct {
     >,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct MetadataImporterPluginType {
+    conduitInterface: *mut MDImporterInterfaceStruct,
+    factoryID: *mut CFUUID,
+    refCount: u32,
+}
+
 unsafe extern "C-unwind" fn dummy_query_interface(
     this: *mut c_void,
     iid: REFIID,
@@ -107,16 +115,6 @@ fn kMDImporterTypeID() -> CFRetained<CFUUID> {
     .unwrap()
 }
 
-static mut INTERFACE: MDImporterInterfaceStruct = MDImporterInterfaceStruct {
-    _reserved: ptr::null_mut(),
-    query_interface: Some(dummy_query_interface),
-    add_ref: Some(dummy_add_ref),
-    release: Some(dummy_release),
-    importer_import_data: Some(importer_import_data_impl),
-};
-
-fn AllocMetadataImporterPluginType(inFactoryID: CFUUID) {}
-
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     allocator: *mut CFAllocator,
@@ -136,8 +134,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
             importer_import_data: Some(importer_import_data_impl),
         };
         let mut br = Box::new(s);
-        let ptr: *mut MDImporterInterfaceStruct =
-            Box::<MDImporterInterfaceStruct>::as_mut_ptr(&mut br);
+        let ptr = Box::as_mut_ptr(&mut br);
         mem::forget(br);
         ptr
     } else {
