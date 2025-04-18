@@ -22,13 +22,17 @@ const KMD_ITEM_DESCRIPTION: &str = "kMDItemDescription";
 pub struct MDImporterInterfaceStruct {
     _reserved: *mut c_void,
     query_interface: Option<
-        unsafe extern "C-unwind" fn(this: *mut c_void, iid: REFIID, out: *mut LPVOID) -> HRESULT,
+        unsafe extern "C-unwind" fn(
+            this: *mut MetadataImporterPluginType,
+            iid: REFIID,
+            out: *mut LPVOID,
+        ) -> HRESULT,
     >,
-    add_ref: Option<unsafe extern "C-unwind" fn(this: *mut c_void) -> ULONG>,
-    release: Option<unsafe extern "C-unwind" fn(this: *mut c_void) -> ULONG>,
+    add_ref: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
+    release: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
     importer_import_data: Option<
         unsafe extern "C-unwind" fn(
-            this: *mut c_void,
+            this: *mut MetadataImporterPluginType,
             attr: *mut CFMutableDictionary,
             content_type_uti: *mut CFString,
             path_to_file: *mut CFString,
@@ -44,36 +48,56 @@ pub struct MetadataImporterPluginType {
     refCount: u32,
 }
 
-unsafe extern "C-unwind" fn dummy_query_interface(
-    this: *mut c_void,
+unsafe extern "C-unwind" fn com_query_interface(
+    this: *mut MetadataImporterPluginType,
     iid: REFIID,
     out: *mut LPVOID,
 ) -> HRESULT {
     0
 }
 
-unsafe extern "C-unwind" fn dummy_add_ref(_this: *mut c_void) -> ULONG {
-    1
+unsafe extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
+    let pt = &mut unsafe { *this };
+    if pt.refCount < 1 {
+        panic!("ref count underflow");
+    }
+    pt.refCount += 1;
+    pt.refCount as ULONG
 }
 
-unsafe extern "C-unwind" fn dummy_release(_this: *mut c_void) -> ULONG {
-    1
+unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
+    let pt = &mut unsafe { *this };
+    if pt.refCount < 1 {
+        panic!("ref count underflow");
+    }
+    pt.refCount -= 1;
+    if pt.refCount != 0 {
+        pt.refCount as ULONG
+    } else {
+        let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
+        pt.factoryID = ptr::null_mut();
+        let ptb = unsafe { Box::from_raw(this) };
+        println!("com_release drop this: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
+        drop(ptb);
+        println!("com_release drop fuuid: {fuuid:#?}");
+        0
+    }
 }
 
-unsafe extern "C-unwind" fn importer_import_data_impl(
-    this: *mut c_void,
+unsafe extern "C-unwind" fn com_importer_import_data(
+    this: *mut MetadataImporterPluginType,
     attr: *mut CFMutableDictionary,
     uti: *mut CFString,
     path: *mut CFString,
 ) -> bool {
-    println!("importer_import_data_impl this: {this:#?}");
+    println!("com_importer_import_data this: {this:#?}");
     let path_cfstr = unsafe { CFRetained::retain(NonNull::new(path).unwrap()) };
     let path_str = path_cfstr.to_string();
-    println!("importer_import_data_impl path: {path_str}");
+    println!("com_importer_import_data path: {path_str}");
     let attro = unsafe { CFRetained::retain(NonNull::new(attr).unwrap()) };
-    println!("importer_import_data_impl attr: {attro:#?}");
+    println!("com_importer_import_data attr: {attro:#?}");
     let utio = unsafe { CFRetained::retain(NonNull::new(uti).unwrap()) };
-    println!("importer_import_data_impl uti: {utio:#?}");
+    println!("com_importer_import_data uti: {utio:#?}");
 
     // if let Ok(file) = File::open(&path_str) {
     //     let mut reader = BufReader::new(file);
@@ -154,12 +178,13 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     if uuid == importer_uuid {
         let s = MDImporterInterfaceStruct {
             _reserved: ptr::null_mut(),
-            query_interface: Some(dummy_query_interface),
-            add_ref: Some(dummy_add_ref),
-            release: Some(dummy_release),
-            importer_import_data: Some(importer_import_data_impl),
+            query_interface: Some(com_query_interface),
+            add_ref: Some(com_add_ref),
+            release: Some(com_release),
+            importer_import_data: Some(com_importer_import_data),
         };
         let ifu = MetadataImporterPluginFactoryUUID();
+        unsafe { CFPlugInAddInstanceForFactory(Some(&ifu)) };
         let ifu_ptr = CFRetained::into_raw(ifu).as_ptr();
         let mut br = Box::new(s);
         let ptr = Box::as_mut_ptr(&mut br);
@@ -167,7 +192,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
         let pt = MetadataImporterPluginType {
             conduitInterface: ptr,
             factoryID: ifu_ptr,
-            refCount: 0,
+            refCount: 1,
         };
         let mut bp = Box::new(pt);
         let bp_ptr = Box::as_mut_ptr(&mut bp);
