@@ -240,6 +240,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
 ) -> *mut MetadataImporterPluginType {
     println!("passed allocator: {allocator:#?}");
     println!("passed uuid ptr: {inFactoryID:#?}");
+    println!("");
     let uuid = unsafe { CFRetained::retain(NonNull::new(inFactoryID).unwrap()) };
     let importer_uuid = kMDImporterTypeID();
     println!("passed uuid: {uuid:#?} importer uuid: {importer_uuid:#?}");
