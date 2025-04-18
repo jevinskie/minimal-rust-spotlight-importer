@@ -7,116 +7,15 @@ use core::ffi::c_void;
 use objc2_core_foundation::{
     CFAllocator, CFMutableDictionary, CFPlugInAddInstanceForFactory,
     CFPlugInRemoveInstanceForFactory, CFRetained, CFString, CFStringBuiltInEncodings,
-    CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes, HRESULT, LPVOID, REFIID,
-    ULONG, kCFAllocatorDefault,
+    CFStringCreateWithBytes, CFUUID, CFUUIDCreateFromUUIDBytes, CFUUIDGetConstantUUIDWithBytes,
+    HRESULT, LPVOID, REFIID, ULONG, kCFAllocatorDefault,
 };
 use std::mem;
-use std::ops::Deref;
 use std::ptr;
 use std::ptr::NonNull;
 
 /// This is the key Spotlight expects for the human-readable description.
 const KMD_ITEM_DESCRIPTION: &str = "kMDItemDescription";
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct MDImporterInterfaceStruct {
-    _reserved: *mut c_void,
-    query_interface: Option<
-        unsafe extern "C-unwind" fn(
-            this: *mut MetadataImporterPluginType,
-            iid: REFIID,
-            out: *mut LPVOID,
-        ) -> HRESULT,
-    >,
-    add_ref: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
-    release: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
-    importer_import_data: Option<
-        unsafe extern "C-unwind" fn(
-            this: *mut MetadataImporterPluginType,
-            attr: *mut CFMutableDictionary,
-            content_type_uti: *mut CFString,
-            path_to_file: *mut CFString,
-        ) -> bool,
-    >,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct MetadataImporterPluginType {
-    conduitInterface: *mut MDImporterInterfaceStruct,
-    factoryID: *mut CFUUID,
-    refCount: u32,
-}
-
-unsafe extern "C-unwind" fn com_query_interface(
-    this: *mut MetadataImporterPluginType,
-    iid: REFIID,
-    out: *mut LPVOID,
-) -> HRESULT {
-    0
-}
-
-unsafe extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
-    let pt = &mut unsafe { *this };
-    if pt.refCount < 1 {
-        panic!("ref count underflow");
-    }
-    pt.refCount += 1;
-    pt.refCount as ULONG
-}
-
-unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
-    let pt = &mut unsafe { *this };
-    if pt.refCount < 1 {
-        panic!("ref count underflow");
-    }
-    pt.refCount -= 1;
-    if pt.refCount != 0 {
-        pt.refCount as ULONG
-    } else {
-        let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
-        pt.factoryID = ptr::null_mut();
-        let ptb = unsafe { Box::from_raw(this) };
-        println!("com_release drop this: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
-        drop(ptb);
-        println!("com_release drop fuuid: {fuuid:#?}");
-        unsafe { CFPlugInRemoveInstanceForFactory(Some(&fuuid)) };
-        drop(fuuid);
-        0
-    }
-}
-
-unsafe extern "C-unwind" fn com_importer_import_data(
-    this: *mut MetadataImporterPluginType,
-    attr: *mut CFMutableDictionary,
-    uti: *mut CFString,
-    path: *mut CFString,
-) -> bool {
-    println!("com_importer_import_data this: {this:#?}");
-    let path_cfstr = unsafe { CFRetained::retain(NonNull::new(path).unwrap()) };
-    let path_str = path_cfstr.to_string();
-    println!("com_importer_import_data path: {path_str}");
-    let attro = unsafe { CFRetained::retain(NonNull::new(attr).unwrap()) };
-    println!("com_importer_import_data attr: {attro:#?}");
-    let utio = unsafe { CFRetained::retain(NonNull::new(uti).unwrap()) };
-    println!("com_importer_import_data uti: {utio:#?}");
-
-    // if let Ok(file) = File::open(&path_str) {
-    //     let mut reader = BufReader::new(file);
-    //     let mut first_line = String::new();
-    //     if reader.read_line(&mut first_line).is_ok() {
-    //         let desc_cfstr = CFString::from_str(first_line.trim());
-    //         let key = CFString::from_str(KMD_ITEM_DESCRIPTION);
-    //         // attr = desc_cfstr;
-    //         // unsafe {objc2_core_foundation::CFDictionarySetValue(Some(&attr), key, &c_void::from(desc_cfst.)) };
-    //         // unsafe { objc2_core_foundation::CFDictionarySetValue(attr as _, key.as_concrete_TypeRef() as _, desc_cfstr.as_concrete_TypeRef() as _) };
-    //         return true;
-    //     }
-    // }
-
-    false
-}
 
 fn kMDImporterTypeID() -> CFRetained<CFUUID> {
     unsafe {
@@ -166,6 +65,147 @@ fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
         )
     }
     .unwrap()
+}
+
+fn IUnknownUUID() -> CFRetained<CFUUID> {
+    unsafe {
+        CFUUIDGetConstantUUIDWithBytes(
+            kCFAllocatorDefault,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0xC0,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x46,
+        )
+    }
+    .unwrap()
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct MDImporterInterfaceStruct {
+    _reserved: *mut c_void,
+    query_interface: Option<
+        unsafe extern "C-unwind" fn(
+            this: *mut MetadataImporterPluginType,
+            iid: REFIID,
+            out: *mut LPVOID,
+        ) -> HRESULT,
+    >,
+    add_ref: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
+    release: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
+    importer_import_data: Option<
+        unsafe extern "C-unwind" fn(
+            this: *mut MetadataImporterPluginType,
+            attr: *mut CFMutableDictionary,
+            content_type_uti: *mut CFString,
+            path_to_file: *mut CFString,
+        ) -> bool,
+    >,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct MetadataImporterPluginType {
+    conduitInterface: *mut MDImporterInterfaceStruct,
+    factoryID: *mut CFUUID,
+    refCount: u32,
+}
+
+unsafe extern "C-unwind" fn com_query_interface(
+    this: *mut MetadataImporterPluginType,
+    iid: REFIID,
+    out: *mut LPVOID,
+) -> HRESULT {
+    let nnthis = NonNull::new(this).unwrap();
+    let t = unsafe { nnthis.as_ref() };
+    let iuuid = unsafe { CFUUIDCreateFromUUIDBytes(kCFAllocatorDefault, iid) }.unwrap();
+    let mut nnout = NonNull::new(out).unwrap();
+    if iuuid == kMDImporterTypeID() || iuuid == IUnknownUUID() {
+        let t2 = t.conduitInterface;
+        let t3 = NonNull::new(t2).unwrap();
+        let t4 = unsafe { t3.as_ref() };
+        let add_ref_fptr = t4.add_ref.unwrap();
+        unsafe { add_ref_fptr(this) };
+        let vthis: *mut c_void = nnthis.as_ptr().cast();
+        unsafe { *nnout.as_ptr() = vthis };
+        0 // S_OK
+    } else {
+        unsafe { *nnout.as_ptr() = ptr::null_mut() };
+        1 // S_FALSE
+    }
+}
+
+unsafe extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
+    let pt = &mut unsafe { *this };
+    if pt.refCount < 1 {
+        panic!("ref count underflow");
+    }
+    pt.refCount = pt.refCount.checked_add(1).unwrap();
+    pt.refCount as ULONG
+}
+
+unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
+    let pt = &mut unsafe { *this };
+    if pt.refCount < 1 {
+        panic!("ref count underflow");
+    }
+    pt.refCount = pt.refCount.checked_sub(1).unwrap();
+    if pt.refCount != 0 {
+        pt.refCount as ULONG
+    } else {
+        let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
+        pt.factoryID = ptr::null_mut();
+        let ptb = unsafe { Box::from_raw(this) };
+        println!("com_release drop this: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
+        drop(ptb);
+        println!("com_release drop fuuid: {fuuid:#?}");
+        unsafe { CFPlugInRemoveInstanceForFactory(Some(&fuuid)) };
+        drop(fuuid);
+        0
+    }
+}
+
+unsafe extern "C-unwind" fn com_importer_import_data(
+    this: *mut MetadataImporterPluginType,
+    attr: *mut CFMutableDictionary,
+    uti: *mut CFString,
+    path: *mut CFString,
+) -> bool {
+    println!("com_importer_import_data this: {this:#?}");
+    let path_cfstr = unsafe { CFRetained::retain(NonNull::new(path).unwrap()) };
+    let path_str = path_cfstr.to_string();
+    println!("com_importer_import_data path: {path_str}");
+    let attro = unsafe { CFRetained::retain(NonNull::new(attr).unwrap()) };
+    println!("com_importer_import_data attr: {attro:#?}");
+    let utio = unsafe { CFRetained::retain(NonNull::new(uti).unwrap()) };
+    println!("com_importer_import_data uti: {utio:#?}");
+
+    // if let Ok(file) = File::open(&path_str) {
+    //     let mut reader = BufReader::new(file);
+    //     let mut first_line = String::new();
+    //     if reader.read_line(&mut first_line).is_ok() {
+    //         let desc_cfstr = CFString::from_str(first_line.trim());
+    //         let key = CFString::from_str(KMD_ITEM_DESCRIPTION);
+    //         // attr = desc_cfstr;
+    //         // unsafe {objc2_core_foundation::CFDictionarySetValue(Some(&attr), key, &c_void::from(desc_cfst.)) };
+    //         // unsafe { objc2_core_foundation::CFDictionarySetValue(attr as _, key.as_concrete_TypeRef() as _, desc_cfstr.as_concrete_TypeRef() as _) };
+    //         return true;
+    //     }
+    // }
+
+    false
 }
 
 #[unsafe(no_mangle)]
