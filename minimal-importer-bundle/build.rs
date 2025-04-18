@@ -2,7 +2,6 @@ use std::{
     env,
     fs::{self, File},
     io::Write,
-    os::unix::fs::symlink,
     path::PathBuf,
 };
 
@@ -13,8 +12,7 @@ fn main() {
     let macos_dir = contents_dir.join("MacOS");
     fs::create_dir_all(&macos_dir).unwrap();
 
-    let plist = format!(
-        r#"<?xml version="1.0" encoding="UTF-8"?>
+    let plist = r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -84,8 +82,7 @@ fn main() {
 		</dict>
 	</array>
 </dict>
-</plist>"#
-    );
+</plist>"#;
     let plist_path = contents_dir.join("Info.plist");
     let mut plist_file = File::create(&plist_path).unwrap();
     plist_file.write_all(plist.as_bytes()).unwrap();
