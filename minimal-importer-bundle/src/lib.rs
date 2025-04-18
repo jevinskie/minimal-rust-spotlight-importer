@@ -4,30 +4,15 @@
 #![feature(box_as_ptr)]
 
 use core::ffi::c_void;
-use libc::{c_char, c_ulong};
-use objc2::Message;
 use objc2::rc::Retained;
 use objc2_core_foundation::{
-    CFAllocator, CFEqual, CFMutableDictionary, CFRetained, CFString, CFStringBuiltInEncodings,
-    CFStringCreateWithBytes, CFStringEncoding, CFStringEncodings, CFType, CFUUID, CFUUIDBytes,
-    CFUUIDGetConstantUUIDWithBytes, kCFAllocatorDefault,
+    CFAllocator, CFMutableDictionary, CFRetained, CFString, CFStringBuiltInEncodings,
+    CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes, HRESULT, LPVOID, REFIID,
+    ULONG, kCFAllocatorDefault,
 };
 use std::mem;
+use std::ptr;
 use std::ptr::NonNull;
-use std::{
-    ffi::CStr,
-    fs::File,
-    io::{BufRead, BufReader, Read},
-    ops::Deref,
-    os::raw::c_void as void,
-    path::Path,
-    ptr,
-};
-
-type HRESULT = i32;
-type ULONG = c_ulong;
-type LPVOID = *mut c_void;
-type REFIID = *const c_void;
 
 /// This is the key Spotlight expects for the human-readable description.
 const KMD_ITEM_DESCRIPTION: &str = "kMDItemDescription";
