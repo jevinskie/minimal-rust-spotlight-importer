@@ -4,11 +4,10 @@
 #![feature(box_as_ptr)]
 
 use core::ffi::c_void;
-use objc2::rc::Retained;
 use objc2_core_foundation::{
-    CFAllocator, CFMutableDictionary, CFRetained, CFString, CFStringBuiltInEncodings,
-    CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes, HRESULT, LPVOID, REFIID,
-    ULONG, kCFAllocatorDefault,
+    CFAllocator, CFMutableDictionary, CFPlugInAddInstanceForFactory, CFRetained, CFString,
+    CFStringBuiltInEncodings, CFStringCreateWithBytes, CFUUID, CFUUIDGetConstantUUIDWithBytes,
+    HRESULT, LPVOID, REFIID, ULONG, kCFAllocatorDefault,
 };
 use std::mem;
 use std::ptr;
@@ -154,9 +153,6 @@ pub unsafe extern "C-unwind" fn ReturnCFString() -> *mut CFString {
         )
     }
     .unwrap();
-    println!("r: {r:#?} {r:#} {r:?}");
-    let rx = unsafe { Retained::retain(Retained::into_raw(r.into())) }.unwrap();
-    let r2 = Retained::into_raw(rx.into());
-    println!("r2: {r2:#?} {r2:?}");
-    r2
+    println!("ReturnCFString r: {r}");
+    CFRetained::as_ptr(&r).as_ptr()
 }
