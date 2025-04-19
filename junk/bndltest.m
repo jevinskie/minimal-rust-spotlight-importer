@@ -1,10 +1,5 @@
-#include <CoreFoundation/CFArray.h>
-#include <CoreFoundation/CFBase.h>
-#include <CoreFoundation/CFDictionary.h>
-#include <CoreFoundation/CFPlugIn.h>
-#import <CoreFoundation/CFPlugInCOM.h>
-#include <CoreFoundation/CFUUID.h>
-#import <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFPlugInCOM.h>
+#include <CoreFoundation/CoreFoundation.h>
 #import <CoreServices/CoreServices.h>
 #import <Foundation/Foundation.h>
 
@@ -76,23 +71,40 @@ int main(int argc, const char **argv) {
         //  Use the factory ID to get an IUnknown interface. Here the plug-in code is loaded.
         iunknown = (IUnknownVTbl **)CFPlugInInstanceCreate(
             kCFAllocatorDefault, (__bridge CFUUIDRef)factories[0], kMDImporterTypeID);
-        printf("iunknown: %p\n", iunknown);
-        printf("iunknown->QueryInterface: %p\n", (*iunknown)->QueryInterface);
+        printf("&iunknown: %p\n", iunknown);
+        assert(iunknown);
+        printf("iunknown: %p\n", *iunknown);
+        printf("iunknown->_reserved: %p &p: %p\n", (*iunknown)->_reserved,
+               &((*iunknown)->_reserved));
+        printf("iunknown->QueryInterface: %p &p: %p\n", (*iunknown)->QueryInterface,
+               &((*iunknown)->QueryInterface));
+        printf("iunknown->AddRef: %p &p: %p\n", (*iunknown)->AddRef, &((*iunknown)->AddRef));
+        printf("iunknown->Release: %p &p: %p\n", (*iunknown)->Release, &((*iunknown)->Release));
         assert(iunknown);
         MDImporterInterfaceStruct **mdip = NULL;
         HRESULT hres;
         hres = (*iunknown)->QueryInterface(iunknown, CFUUIDGetUUIDBytes(kMDImporterInterfaceID),
                                            (LPVOID *)(&mdip));
         printf("hres: %d %x mdip: %p\n", hres, (uint32_t)hres, mdip);
+        fflush(stdout);
         if (mdip) {
             printf("*mdip: %p\n", *mdip);
         }
+        printf("before (*iunknown)->Release(iunknown);\n");
+        fflush(stdout);
         (*iunknown)->Release(iunknown);
+        printf("after (*iunknown)->Release(iunknown);\n");
+        fflush(stdout);
         assert(mdip);
         MDImporterInterfaceStruct *mdi = *mdip;
-        NSMutableDictionary *dict      = NSMutableDictionary.new;
+        printf("mdi AddRef: %p &p: %p\n", mdi->AddRef, &(mdi->AddRef));
+        printf("mdi Release: %p &p: %p\n", mdi->Release, &(mdi->Release));
+        printf("mdi ImporterImportData: %p &p: %p\n", mdi->ImporterImportData,
+               &(mdi->ImporterImportData));
+        NSMutableDictionary *dict = NSMutableDictionary.new;
         NSLog(@"dict before: %@", dict);
-        NSString *uti      = @"com.apple.xcode.dsym";
+        NSString *uti = @"com.apple.xcode.dsym";
+        fflush(stdout);
         Boolean import_res = mdi->ImporterImportData(mdi, (__bridge CFMutableDictionaryRef)dict,
                                                      (__bridge CFStringRef)uti,
                                                      (__bridge CFStringRef)file_to_import);

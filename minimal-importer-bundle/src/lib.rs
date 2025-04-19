@@ -157,7 +157,8 @@ unsafe extern "C-unwind" fn com_query_interface(
     let t = unsafe { nnthis.as_ref() };
     let iuuid = unsafe { CFUUID::from_uuid_bytes(kCFAllocatorDefault, iid) }.unwrap();
     let nnout = NonNull::new(out).unwrap();
-    if iuuid == kMDImporterTypeID() || iuuid == IUnknownUUID() {
+    println!("com_query_interface: uuid: {iuuid:#?}");
+    if iuuid == kMDImporterInterfaceID() || iuuid == IUnknownUUID() {
         let t2 = t.conduitInterface;
         let t3 = NonNull::new(t2).unwrap();
         let t4 = unsafe { t3.as_ref() };
