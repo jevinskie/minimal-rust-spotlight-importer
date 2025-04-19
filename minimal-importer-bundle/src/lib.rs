@@ -4,12 +4,12 @@
 #![feature(box_as_ptr)]
 
 use core::ffi::c_void;
+use log::{LevelFilter, info};
 use objc2_core_foundation::{
-    CFAllocator, CFMutableDictionary, CFPlugInAddInstanceForFactory,
-    CFPlugInRemoveInstanceForFactory, CFRetained, CFString, CFStringBuiltInEncodings,
-    CFStringCreateWithBytes, CFUUID, CFUUIDCreateFromUUIDBytes, CFUUIDGetConstantUUIDWithBytes,
-    HRESULT, LPVOID, REFIID, ULONG, kCFAllocatorDefault,
+    CFAllocator, CFMutableDictionary, CFPlugIn, CFRetained, CFString, CFUUID, HRESULT, LPVOID,
+    REFIID, ULONG, kCFAllocatorDefault,
 };
+use oslog::OsLogger;
 use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
@@ -19,7 +19,7 @@ const KMD_ITEM_DESCRIPTION: &str = "kMDItemDescription";
 
 fn kMDImporterTypeID() -> CFRetained<CFUUID> {
     unsafe {
-        CFUUIDGetConstantUUIDWithBytes(
+        CFUUID::constant_uuid_with_bytes(
             kCFAllocatorDefault,
             0x8B,
             0x08,
@@ -44,7 +44,7 @@ fn kMDImporterTypeID() -> CFRetained<CFUUID> {
 
 fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
     unsafe {
-        CFUUIDGetConstantUUIDWithBytes(
+        CFUUID::constant_uuid_with_bytes(
             kCFAllocatorDefault,
             0x6E,
             0xBC,
@@ -69,7 +69,7 @@ fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
 
 fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
     unsafe {
-        CFUUIDGetConstantUUIDWithBytes(
+        CFUUID::constant_uuid_with_bytes(
             kCFAllocatorDefault,
             0xd8,
             0x78,
@@ -94,7 +94,7 @@ fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
 
 fn IUnknownUUID() -> CFRetained<CFUUID> {
     unsafe {
-        CFUUIDGetConstantUUIDWithBytes(
+        CFUUID::constant_uuid_with_bytes(
             kCFAllocatorDefault,
             0x00,
             0x00,
@@ -155,8 +155,8 @@ unsafe extern "C-unwind" fn com_query_interface(
 ) -> HRESULT {
     let nnthis = NonNull::new(this).unwrap();
     let t = unsafe { nnthis.as_ref() };
-    let iuuid = unsafe { CFUUIDCreateFromUUIDBytes(kCFAllocatorDefault, iid) }.unwrap();
-    let mut nnout = NonNull::new(out).unwrap();
+    let iuuid = unsafe { CFUUID::from_uuid_bytes(kCFAllocatorDefault, iid) }.unwrap();
+    let nnout = NonNull::new(out).unwrap();
     if iuuid == kMDImporterTypeID() || iuuid == IUnknownUUID() {
         let t2 = t.conduitInterface;
         let t3 = NonNull::new(t2).unwrap();
@@ -196,7 +196,7 @@ unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -
         println!("com_release drop this: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
         drop(ptb);
         println!("com_release drop fuuid: {fuuid:#?}");
-        unsafe { CFPlugInRemoveInstanceForFactory(Some(&fuuid)) };
+        CFPlugIn::remove_instance_for_factory(Some(&fuuid));
         drop(fuuid);
         0
     }
@@ -238,6 +238,11 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     allocator: *mut CFAllocator,
     inFactoryID: *mut CFUUID,
 ) -> *mut MetadataImporterPluginType {
+    OsLogger::new("vin.je.minimal-importer")
+        .level_filter(LevelFilter::Debug)
+        .init()
+        .unwrap();
+    info!("MetadataImporterPluginFactory called");
     println!("passed allocator: {allocator:#?}");
     println!("passed uuid ptr: {inFactoryID:#?}");
     println!("");
@@ -253,7 +258,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
             importer_import_data: Some(com_importer_import_data),
         };
         let ifu = MetadataImporterPluginFactoryUUID();
-        unsafe { CFPlugInAddInstanceForFactory(Some(&ifu)) };
+        CFPlugIn::add_instance_for_factory(Some(&ifu));
         let ifu_ptr = CFRetained::into_raw(ifu).as_ptr();
         let mut br = Box::new(s);
         let ptr = Box::as_mut_ptr(&mut br);
@@ -274,17 +279,16 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn ReturnCFString() -> *mut CFString {
-    let s = "hellooo";
-    let r = unsafe {
-        CFStringCreateWithBytes(
-            kCFAllocatorDefault,
-            s.as_ptr(),
-            s.len() as isize,
-            CFStringBuiltInEncodings::EncodingUTF8.0,
-            false,
-        )
-    }
-    .unwrap();
+    let r = CFString::from_static_str("hellooo");
     println!("ReturnCFString r: {r}");
     CFRetained::as_ptr(&r).as_ptr()
 }
+
+// #[ctor]
+// fn minimal_importer_bundle_init() {
+//         OsLogger::new("com.example.test")
+//         .level_filter(LevelFilter::Debug)
+//         .category_level_filter("Settings", LevelFilter::Trace)
+//         .init()
+//         .unwrap();
+// }
