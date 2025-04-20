@@ -83,6 +83,7 @@ int main(int argc, const char **argv) {
         assert(iunknown);
         MDImporterInterfaceStruct **mdip = NULL;
         HRESULT hres;
+        assert((*iunknown)->QueryInterface);
         hres = (*iunknown)->QueryInterface(iunknown, CFUUIDGetUUIDBytes(kMDImporterInterfaceID),
                                            (LPVOID *)(&mdip));
         printf("hres: %d %x mdip: %p\n", hres, (uint32_t)hres, mdip);
@@ -92,11 +93,13 @@ int main(int argc, const char **argv) {
         }
         printf("before (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
+        assert((*iunknown)->Release);
         (*iunknown)->Release(iunknown);
         printf("after (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
         assert(mdip);
-        MDImporterInterfaceStruct *mdi = *mdip;
+        MDImporterInterfaceStruct *mdi = ((MetadataImporterPlugin_t *)mdip)->conduitInterface;
+        assert(mdi);
         printf("mdi AddRef: %p &p: %p\n", mdi->AddRef, &(mdi->AddRef));
         printf("mdi Release: %p &p: %p\n", mdi->Release, &(mdi->Release));
         printf("mdi ImporterImportData: %p &p: %p\n", mdi->ImporterImportData,
@@ -105,11 +108,13 @@ int main(int argc, const char **argv) {
         NSLog(@"dict before: %@", dict);
         NSString *uti = @"com.apple.xcode.dsym";
         fflush(stdout);
+        assert(mdi->ImporterImportData);
         Boolean import_res = mdi->ImporterImportData(mdi, (__bridge CFMutableDictionaryRef)dict,
                                                      (__bridge CFStringRef)uti,
                                                      (__bridge CFStringRef)file_to_import);
         printf("import_res: %d\n", import_res);
         NSLog(@"dict after: %@", dict);
+        assert(mdi->Release);
         mdi->Release(mdi);
         printf("mdi final release done\n");
         CFRelease(plugin);
