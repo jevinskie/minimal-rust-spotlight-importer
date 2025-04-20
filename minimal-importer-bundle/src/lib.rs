@@ -158,8 +158,9 @@ unsafe extern "C-unwind" fn com_query_interface(
     iid: REFIID,
     out: *mut LPVOID,
 ) -> HRESULT {
-    let nnthis = NonNull::new(this).unwrap();
+    let mut nnthis = NonNull::new(this).unwrap();
     let t = unsafe { nnthis.as_ref() };
+    let mt = unsafe { nnthis.as_mut() };
     let iuuid = unsafe { CFUUID::from_uuid_bytes(kCFAllocatorDefault, iid) }.unwrap();
     let nnout = NonNull::new(out).unwrap();
     let ci = t.conduitInterface;
@@ -168,8 +169,9 @@ unsafe extern "C-unwind" fn com_query_interface(
         let t2 = t.conduitInterface.cast_mut();
         let t3 = NonNull::new(t2).unwrap();
         let t4 = unsafe { t3.as_ref() };
-        let add_ref_fptr = t4.add_ref.unwrap();
-        unsafe { add_ref_fptr(this) };
+        // let add_ref_fptr = t4.add_ref.unwrap();
+        // unsafe { add_ref_fptr(this) };
+        com_add_ref_safe(mt);
         let vthis: *mut c_void = nnthis.as_ptr().cast();
         println!("com_query_interface returning S_OK this: {this:#?} vthis: {vthis:#?} t: {t:#?}");
         unsafe { *nnout.as_ptr() = vthis };
@@ -189,6 +191,16 @@ unsafe extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -
     pt.refCount = pt.refCount.checked_add(1).unwrap();
     println!("com_add_ref end this: {this:#?} pt: {pt:#?}");
     pt.refCount as ULONG
+}
+
+fn com_add_ref_safe(this: &mut MetadataImporterPluginType) -> ULONG {
+    println!("com_add_ref_safe begin this: {this:#?}");
+    if this.refCount < 1 {
+        panic!("ref count underflow");
+    }
+    this.refCount = this.refCount.checked_add(1).unwrap();
+    println!("com_add_ref_safe end this: {this:#?}");
+    this.refCount as ULONG
 }
 
 unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
