@@ -106,7 +106,8 @@ int main(int argc, const char **argv) {
                &(mdi->ImporterImportData));
         NSMutableDictionary *dict = NSMutableDictionary.new;
         NSLog(@"dict before: %@", dict);
-        NSString *uti = @"com.apple.xcode.dsym";
+        // NSString *uti = @"com.apple.xcode.dsym";
+        NSString *uti = @"vin.je.rich";
         fflush(stdout);
         assert(mdi->ImporterImportData);
         Boolean import_res = mdi->ImporterImportData(mdi, (__bridge CFMutableDictionaryRef)dict,

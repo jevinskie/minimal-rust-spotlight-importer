@@ -140,13 +140,19 @@ pub struct MDImporterInterfaceStruct {
     >,
 }
 
+unsafe impl Send for MDImporterInterfaceStruct {}
+unsafe impl Sync for MDImporterInterfaceStruct {}
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct MetadataImporterPluginType {
-    conduitInterface: *mut MDImporterInterfaceStruct,
+    conduitInterface: *const MDImporterInterfaceStruct,
     factoryID: *mut CFUUID,
     refCount: u32,
 }
+
+unsafe impl Send for MetadataImporterPluginType {}
+unsafe impl Sync for MetadataImporterPluginType {}
 
 unsafe extern "C-unwind" fn com_query_interface(
     this: *mut MetadataImporterPluginType,
@@ -160,7 +166,7 @@ unsafe extern "C-unwind" fn com_query_interface(
     let ci = t.conduitInterface;
     println!("com_query_interface: this: {this:#?} t.conduitInterface: {ci:#?} uuid: {iuuid:#?}");
     if iuuid == kMDImporterInterfaceID() || iuuid == IUnknownUUID() {
-        let t2 = t.conduitInterface;
+        let t2 = t.conduitInterface.cast_mut();
         let t3 = NonNull::new(t2).unwrap();
         let t4 = unsafe { t3.as_ref() };
         let add_ref_fptr = t4.add_ref.unwrap();
@@ -198,7 +204,7 @@ unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -
         let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
         pt.factoryID = ptr::null_mut();
         let ptb = unsafe { Box::from_raw(this) };
-        println!("com_release drop this: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
+        println!("com_release drop this_mod: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
         drop(ptb);
         println!("com_release drop fuuid: {fuuid:#?}");
         CFPlugIn::remove_instance_for_factory(Some(&fuuid));
@@ -238,6 +244,14 @@ unsafe extern "C-unwind" fn com_importer_import_data(
     false
 }
 
+static INTERFACE: MDImporterInterfaceStruct = MDImporterInterfaceStruct {
+    _reserved: ptr::null_mut(),
+    query_interface: Some(com_query_interface),
+    add_ref: Some(com_add_ref),
+    release: Some(com_release),
+    importer_import_data: Some(com_importer_import_data),
+};
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     allocator: *mut CFAllocator,
@@ -254,7 +268,9 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     let uuid = unsafe { CFRetained::retain(NonNull::new(inFactoryID).unwrap()) };
     let importer_uuid = kMDImporterTypeID();
     println!("passed uuid: {uuid:#?} importer uuid: {importer_uuid:#?}");
-    if uuid == importer_uuid {
+    if uuid != importer_uuid {
+        ptr::null_mut()
+    } else {
         let s = MDImporterInterfaceStruct {
             _reserved: ptr::null_mut(),
             query_interface: Some(com_query_interface),
@@ -265,20 +281,15 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
         let ifu = MetadataImporterPluginFactoryUUID();
         CFPlugIn::add_instance_for_factory(Some(&ifu));
         let ifu_ptr = CFRetained::into_raw(ifu).as_ptr();
-        let mut br = Box::new(s);
-        let ptr = Box::as_mut_ptr(&mut br);
-        mem::forget(br);
-        let pt = MetadataImporterPluginType {
-            conduitInterface: ptr,
+        let br = Box::new(MetadataImporterPluginType {
+            conduitInterface: &INTERFACE,
             factoryID: ifu_ptr,
             refCount: 1,
-        };
-        let mut bp = Box::new(pt);
-        let bp_ptr = Box::as_mut_ptr(&mut bp);
-        mem::forget(bp);
-        bp_ptr
-    } else {
-        ptr::null_mut()
+        });
+        let r = Box::into_raw(br);
+        let dr = r.as_ref().unwrap();
+        println!("MetadataImporterPluginFactory returning r: {r:#?} dr: {dr:#?}");
+        r
     }
 }
 
