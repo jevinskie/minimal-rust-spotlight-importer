@@ -66,7 +66,7 @@ fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
     .unwrap()
 }
 
-fn kMDImporterTypeID() -> CFRetained<CFUUID> {
+fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
     unsafe {
         CFUUID::constant_uuid_with_bytes(
             kCFAllocatorDefault,
@@ -287,7 +287,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     if uuid != importer_uuid {
         ptr::null_mut()
     } else {
-        let ifu = kMDImporterTypeID();
+        let ifu = MetadataImporterPluginFactoryUUID();
         CFPlugIn::add_instance_for_factory(Some(&ifu));
         let ifu_ptr = CFRetained::into_raw(ifu).as_ptr();
         let br = Box::new(MetadataImporterPluginType {
