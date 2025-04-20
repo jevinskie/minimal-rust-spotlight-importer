@@ -94,7 +94,15 @@ int main(int argc, const char **argv) {
         printf("before (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
         assert((*iunknown)->Release);
-        // (*iunknown)->Release(iunknown);
+        (*iunknown)->Release(iunknown);
+        printf("&iunknown: %p\n", iunknown);
+        printf("iunknown: %p\n", *iunknown);
+        printf("iunknown->_reserved: %p &p: %p\n", (*iunknown)->_reserved,
+               &((*iunknown)->_reserved));
+        printf("iunknown->QueryInterface: %p &p: %p\n", (*iunknown)->QueryInterface,
+               &((*iunknown)->QueryInterface));
+        printf("iunknown->AddRef: %p &p: %p\n", (*iunknown)->AddRef, &((*iunknown)->AddRef));
+        printf("iunknown->Release: %p &p: %p\n", (*iunknown)->Release, &((*iunknown)->Release));
         printf("after (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
         assert(mdip);

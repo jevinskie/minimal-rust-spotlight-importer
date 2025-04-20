@@ -171,7 +171,7 @@ unsafe extern "C-unwind" fn com_query_interface(
         let add_ref_fptr = t4.add_ref.unwrap();
         unsafe { add_ref_fptr(this) };
         let vthis: *mut c_void = nnthis.as_ptr().cast();
-        println!("com_query_interface returning S_OK this: {this:#?} vthis: {vthis:#?}");
+        println!("com_query_interface returning S_OK this: {this:#?} vthis: {vthis:#?} t: {t:#?}");
         unsafe { *nnout.as_ptr() = vthis };
         0 // S_OK
     } else {
