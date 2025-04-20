@@ -1,7 +1,7 @@
 // avoid pre-commit shebang confusion
-#![feature(extern_types)]
-#![feature(no_sanitize)]
-#![feature(box_as_ptr)]
+// #![feature(extern_types)]
+// #![feature(no_sanitize)]
+// #![feature(box_as_ptr)]
 
 use core::ffi::c_void;
 use log::{LevelFilter, info};
@@ -17,102 +17,94 @@ use std::ptr::NonNull;
 const KMD_ITEM_DESCRIPTION: &str = "kMDItemDescription";
 
 fn kMDImporterTypeID() -> CFRetained<CFUUID> {
-    unsafe {
-        CFUUID::constant_uuid_with_bytes(
-            kCFAllocatorDefault,
-            0x8B,
-            0x08,
-            0xC4,
-            0xBF,
-            0x41,
-            0x5B,
-            0x11,
-            0xD8,
-            0xB3,
-            0xF9,
-            0x00,
-            0x03,
-            0x93,
-            0x67,
-            0x26,
-            0xFC,
-        )
-    }
+    CFUUID::constant_uuid_with_bytes(
+        unsafe { kCFAllocatorDefault },
+        0x8B,
+        0x08,
+        0xC4,
+        0xBF,
+        0x41,
+        0x5B,
+        0x11,
+        0xD8,
+        0xB3,
+        0xF9,
+        0x00,
+        0x03,
+        0x93,
+        0x67,
+        0x26,
+        0xFC,
+    )
     .unwrap()
 }
 
 fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
-    unsafe {
-        CFUUID::constant_uuid_with_bytes(
-            kCFAllocatorDefault,
-            0x6E,
-            0xBC,
-            0x27,
-            0xC4,
-            0x89,
-            0x9C,
-            0x11,
-            0xD8,
-            0x84,
-            0xAE,
-            0x00,
-            0x03,
-            0x93,
-            0x67,
-            0x26,
-            0xFC,
-        )
-    }
+    CFUUID::constant_uuid_with_bytes(
+        unsafe { kCFAllocatorDefault },
+        0x6E,
+        0xBC,
+        0x27,
+        0xC4,
+        0x89,
+        0x9C,
+        0x11,
+        0xD8,
+        0x84,
+        0xAE,
+        0x00,
+        0x03,
+        0x93,
+        0x67,
+        0x26,
+        0xFC,
+    )
     .unwrap()
 }
 
 fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
-    unsafe {
-        CFUUID::constant_uuid_with_bytes(
-            kCFAllocatorDefault,
-            0xd8,
-            0x78,
-            0x57,
-            0xf7,
-            0xb0,
-            0xc0,
-            0x4c,
-            0x70,
-            0x9b,
-            0x8f,
-            0x2e,
-            0x3d,
-            0x8e,
-            0x55,
-            0x19,
-            0x8c,
-        )
-    }
+    CFUUID::constant_uuid_with_bytes(
+        unsafe { kCFAllocatorDefault },
+        0xd8,
+        0x78,
+        0x57,
+        0xf7,
+        0xb0,
+        0xc0,
+        0x4c,
+        0x70,
+        0x9b,
+        0x8f,
+        0x2e,
+        0x3d,
+        0x8e,
+        0x55,
+        0x19,
+        0x8c,
+    )
     .unwrap()
 }
 
 fn IUnknownUUID() -> CFRetained<CFUUID> {
-    unsafe {
-        CFUUID::constant_uuid_with_bytes(
-            kCFAllocatorDefault,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0xC0,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x46,
-        )
-    }
+    CFUUID::constant_uuid_with_bytes(
+        unsafe { kCFAllocatorDefault },
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0xC0,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x46,
+    )
     .unwrap()
 }
 
@@ -121,16 +113,16 @@ fn IUnknownUUID() -> CFRetained<CFUUID> {
 pub struct MDImporterInterfaceStruct {
     _reserved: *mut c_void,
     query_interface: Option<
-        unsafe extern "C-unwind" fn(
+        extern "C-unwind" fn(
             this: *mut MetadataImporterPluginType,
             iid: REFIID,
             out: *mut LPVOID,
         ) -> HRESULT,
     >,
-    add_ref: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
-    release: Option<unsafe extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
+    add_ref: Option<extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
+    release: Option<extern "C-unwind" fn(this: *mut MetadataImporterPluginType) -> ULONG>,
     importer_import_data: Option<
-        unsafe extern "C-unwind" fn(
+        extern "C-unwind" fn(
             this: *mut MetadataImporterPluginType,
             attr: *mut CFMutableDictionary,
             content_type_uti: *mut CFString,
@@ -150,10 +142,7 @@ pub struct MetadataImporterPluginType {
     refCount: u32,
 }
 
-unsafe impl Send for MetadataImporterPluginType {}
-unsafe impl Sync for MetadataImporterPluginType {}
-
-unsafe extern "C-unwind" fn com_query_interface(
+extern "C-unwind" fn com_query_interface(
     this: *mut MetadataImporterPluginType,
     iid: REFIID,
     out: *mut LPVOID,
@@ -182,7 +171,7 @@ unsafe extern "C-unwind" fn com_query_interface(
     }
 }
 
-unsafe extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
+extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
     let pt = &mut unsafe { *this };
     println!("com_add_ref this: {this:#?} pt: {pt:#?}");
     if pt.refCount < 1 {
@@ -203,7 +192,7 @@ fn com_add_ref_safe(this: &mut MetadataImporterPluginType) -> ULONG {
     this.refCount as ULONG
 }
 
-unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
+extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
     let pt = &mut unsafe { *this };
     println!("com_release this: {this:#?} pt: {pt:#?}");
     if pt.refCount < 1 {
@@ -228,7 +217,7 @@ unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -
     }
 }
 
-unsafe extern "C-unwind" fn com_importer_import_data(
+extern "C-unwind" fn com_importer_import_data(
     this: *mut MetadataImporterPluginType,
     attr: *mut CFMutableDictionary,
     uti: *mut CFString,
@@ -281,7 +270,7 @@ static INTERFACE: MDImporterInterfaceStruct = MDImporterInterfaceStruct {
 };
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
+pub extern "C-unwind" fn MetadataImporterPluginFactory(
     allocator: *mut CFAllocator,
     inFactoryID: *mut CFUUID,
 ) -> *mut MetadataImporterPluginType {
@@ -315,17 +304,8 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C-unwind" fn ReturnCFString() -> *mut CFString {
+pub extern "C-unwind" fn ReturnCFString() -> *mut CFString {
     let r = CFString::from_static_str("hellooo");
     println!("ReturnCFString r: {r}");
     CFRetained::as_ptr(&r).as_ptr()
 }
-
-// #[ctor]
-// fn minimal_importer_bundle_init() {
-//         OsLogger::new("com.example.test")
-//         .level_filter(LevelFilter::Debug)
-//         .category_level_filter("Settings", LevelFilter::Trace)
-//         .init()
-//         .unwrap();
-// }
