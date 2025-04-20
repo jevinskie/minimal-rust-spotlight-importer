@@ -71,6 +71,7 @@ int main(int argc, const char **argv) {
         //  Use the factory ID to get an IUnknown interface. Here the plug-in code is loaded.
         iunknown = (IUnknownVTbl **)CFPlugInInstanceCreate(
             kCFAllocatorDefault, (__bridge CFUUIDRef)factories[0], kMDImporterTypeID);
+        MetadataImporterPlugin_t *plg = (MetadataImporterPlugin_t *)iunknown;
         printf("&iunknown: %p\n", iunknown);
         assert(iunknown);
         printf("iunknown: %p\n", *iunknown);
@@ -91,19 +92,13 @@ int main(int argc, const char **argv) {
         if (mdip) {
             printf("*mdip: %p\n", *mdip);
         }
+        printf("before plg->refCount: %u\n", plg->refCount);
         printf("before (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
         assert((*iunknown)->Release);
         (*iunknown)->Release(iunknown);
-        printf("&iunknown: %p\n", iunknown);
-        printf("iunknown: %p\n", *iunknown);
-        printf("iunknown->_reserved: %p &p: %p\n", (*iunknown)->_reserved,
-               &((*iunknown)->_reserved));
-        printf("iunknown->QueryInterface: %p &p: %p\n", (*iunknown)->QueryInterface,
-               &((*iunknown)->QueryInterface));
-        printf("iunknown->AddRef: %p &p: %p\n", (*iunknown)->AddRef, &((*iunknown)->AddRef));
-        printf("iunknown->Release: %p &p: %p\n", (*iunknown)->Release, &((*iunknown)->Release));
         printf("after (*iunknown)->Release(iunknown);\n");
+        printf("after plg->refCount: %u\n", plg->refCount);
         fflush(stdout);
         assert(mdip);
         MDImporterInterfaceStruct *mdi = ((MetadataImporterPlugin_t *)mdip)->conduitInterface;

@@ -66,7 +66,7 @@ fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
     .unwrap()
 }
 
-fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
+fn kMDImporterTypeID() -> CFRetained<CFUUID> {
     unsafe {
         CFUUID::constant_uuid_with_bytes(
             kCFAllocatorDefault,
@@ -202,13 +202,15 @@ unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -
         println!("com_release end (no-dealloc) this: {this:#?} pt: {pt:#?}");
         pt.refCount as ULONG
     } else {
+        println!("com_release end (dealloc) this: {this:#?} pt: {pt:#?}");
         let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
         pt.factoryID = ptr::null_mut();
         let ptb = unsafe { Box::from_raw(this) };
-        println!("com_release drop this_mod: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
+        println!("com_release drop ptb: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
         drop(ptb);
-        println!("com_release drop fuuid: {fuuid:#?}");
+        println!("com_release call remove_instance_for_factory for {fuuid:#?}");
         CFPlugIn::remove_instance_for_factory(Some(&fuuid));
+        println!("com_release drop fuuid: {fuuid:#?}");
         drop(fuuid);
         0
     }
@@ -285,7 +287,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     if uuid != importer_uuid {
         ptr::null_mut()
     } else {
-        let ifu = MetadataImporterPluginFactoryUUID();
+        let ifu = kMDImporterTypeID();
         CFPlugIn::add_instance_for_factory(Some(&ifu));
         let ifu_ptr = CFRetained::into_raw(ifu).as_ptr();
         let br = Box::new(MetadataImporterPluginType {
