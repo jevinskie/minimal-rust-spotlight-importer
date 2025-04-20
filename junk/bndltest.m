@@ -94,7 +94,7 @@ int main(int argc, const char **argv) {
         printf("before (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
         assert((*iunknown)->Release);
-        (*iunknown)->Release(iunknown);
+        // (*iunknown)->Release(iunknown);
         printf("after (*iunknown)->Release(iunknown);\n");
         fflush(stdout);
         assert(mdip);
