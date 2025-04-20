@@ -10,7 +10,6 @@ use objc2_core_foundation::{
     REFIID, ULONG, kCFAllocatorDefault,
 };
 use oslog::OsLogger;
-use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
 
@@ -172,7 +171,7 @@ unsafe extern "C-unwind" fn com_query_interface(
         let add_ref_fptr = t4.add_ref.unwrap();
         unsafe { add_ref_fptr(this) };
         let vthis: *mut c_void = nnthis.as_ptr().cast();
-        println!("com_query_interface this: {this:#?} vthis: {vthis:#?}");
+        println!("com_query_interface returning S_OK this: {this:#?} vthis: {vthis:#?}");
         unsafe { *nnout.as_ptr() = vthis };
         0 // S_OK
     } else {
@@ -188,6 +187,7 @@ unsafe extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -
         panic!("ref count underflow");
     }
     pt.refCount = pt.refCount.checked_add(1).unwrap();
+    println!("com_add_ref end this: {this:#?} pt: {pt:#?}");
     pt.refCount as ULONG
 }
 
@@ -199,6 +199,7 @@ unsafe extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -
     }
     pt.refCount = pt.refCount.checked_sub(1).unwrap();
     if pt.refCount != 0 {
+        println!("com_release end (no-dealloc) this: {this:#?} pt: {pt:#?}");
         pt.refCount as ULONG
     } else {
         let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
@@ -240,6 +241,19 @@ unsafe extern "C-unwind" fn com_importer_import_data(
     //         return true;
     //     }
     // }
+    if true {
+        let key = CFString::from_static_str(KMD_ITEM_DESCRIPTION);
+        let val = CFString::from_static_str("this is GREAT");
+        CFMutableDictionary::<CFString, CFString>::add(
+            unsafe {
+                attr.cast::<CFMutableDictionary<CFString, CFString>>()
+                    .as_ref()
+            }
+            .unwrap(),
+            &key,
+            &val,
+        );
+    }
 
     false
 }
@@ -271,13 +285,6 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
     if uuid != importer_uuid {
         ptr::null_mut()
     } else {
-        let s = MDImporterInterfaceStruct {
-            _reserved: ptr::null_mut(),
-            query_interface: Some(com_query_interface),
-            add_ref: Some(com_add_ref),
-            release: Some(com_release),
-            importer_import_data: Some(com_importer_import_data),
-        };
         let ifu = MetadataImporterPluginFactoryUUID();
         CFPlugIn::add_instance_for_factory(Some(&ifu));
         let ifu_ptr = CFRetained::into_raw(ifu).as_ptr();
@@ -287,7 +294,7 @@ pub unsafe extern "C-unwind" fn MetadataImporterPluginFactory(
             refCount: 1,
         });
         let r = Box::into_raw(br);
-        let dr = r.as_ref().unwrap();
+        let dr = unsafe { r.as_ref() }.unwrap();
         println!("MetadataImporterPluginFactory returning r: {r:#?} dr: {dr:#?}");
         r
     }
