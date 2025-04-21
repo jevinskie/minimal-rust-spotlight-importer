@@ -1,1 +1,5 @@
 /target
+bndltest
+comtest
+*.dSYM/
+Cargo.lock
