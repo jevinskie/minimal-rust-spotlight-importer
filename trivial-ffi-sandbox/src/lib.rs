@@ -23,7 +23,7 @@ impl Drop for Student {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn create_student(
     age: c_int,
     grade: c_int,
@@ -43,7 +43,7 @@ pub extern "C" fn create_student(
     }))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn dealloc_student(student: *mut Student) {
     if !student.is_null() {
         let _ = unsafe { Box::from_raw(student) };
@@ -51,7 +51,7 @@ pub extern "C" fn dealloc_student(student: *mut Student) {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn increase_student_age(student: *mut Student) -> c_int {
     if student.is_null() {
         return -1;
@@ -61,7 +61,7 @@ pub extern "C" fn increase_student_age(student: *mut Student) -> c_int {
     student.age
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn get_student_grade(student: *const Student) -> c_int {
     if student.is_null() {
         return -1;
@@ -70,26 +70,26 @@ pub extern "C" fn get_student_grade(student: *const Student) -> c_int {
     unsafe { &*student }.grade
 }
 
-#[no_mangle]
-pub extern "C" fn display_student(student: *const Student) {
-    if student.is_null() {
-        println!("student is empty");
-        return;
-    }
-    let student = unsafe { &*student };
-    println!("student: age: {} grade: {}", student.age, student.grade);
-    if student.school.is_null() {
-        println!("  school: empty");
-    } else {
-        let school = unsafe { &*student.school };
-        println!(
-            "  school: district: {} num_teachers: {}",
-            school.district, school.num_teachers
-        );
-    }
-}
+// #[unsafe(no_mangle)]
+// pub extern "C" fn display_student(student: *const Student) {
+//     if student.is_null() {
+//         println!("student is empty");
+//         return;
+//     }
+//     let student = unsafe { &*student };
+//     println!("student: age: {} grade: {}", student.age, student.grade);
+//     if student.school.is_null() {
+//         println!("  school: empty");
+//     } else {
+//         let school = unsafe { &*student.school };
+//         println!(
+//             "  school: district: {} num_teachers: {}",
+//             school.district, school.num_teachers
+//         );
+//     }
+// }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn safe_create_student(
     age: i32,
     grade: i32,
@@ -109,18 +109,18 @@ pub fn safe_create_student(
     }))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn safe_increase_student_age(student: &mut Student) -> i32 {
     student.age += 1;
     student.age
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn safe_get_student_grade(student: &Student) -> i32 {
     student.grade
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn safe_get_student_grade_ptr(student_ptr: *const Student) -> Option<i32> {
     if student_ptr.is_null() {
         None
@@ -129,16 +129,16 @@ pub fn safe_get_student_grade_ptr(student_ptr: *const Student) -> Option<i32> {
     }
 }
 
-#[no_mangle]
-pub fn safe_display_student(student: &Student) {
-    println!("student: age: {} grade: {}", student.age, student.grade);
-    if student.school.is_null() {
-        println!("  school: empty");
-    } else {
-        let school = unsafe { &*student.school };
-        println!(
-            "  school: district: {} num_teachers: {}",
-            school.district, school.num_teachers
-        );
-    }
-}
+// #[unsafe(no_mangle)]
+// pub fn safe_display_student(student: &Student) {
+//     println!("student: age: {} grade: {}", student.age, student.grade);
+//     if student.school.is_null() {
+//         println!("  school: empty");
+//     } else {
+//         let school = unsafe { &*student.school };
+//         println!(
+//             "  school: district: {} num_teachers: {}",
+//             school.district, school.num_teachers
+//         );
+//     }
+// }
