@@ -3,13 +3,13 @@
 // #![feature(no_sanitize)]
 // #![feature(box_as_ptr)]
 
-use core::ffi::c_void;
 use log::{LevelFilter, info};
 use objc2_core_foundation::{
     CFAllocator, CFMutableDictionary, CFPlugIn, CFRetained, CFString, CFUUID, HRESULT, LPVOID,
     REFIID, ULONG, kCFAllocatorDefault,
 };
 use oslog::OsLogger;
+use std::ffi::c_void;
 use std::ptr;
 use std::ptr::NonNull;
 

@@ -1,4 +1,4 @@
-use core::ffi::c_int;
+use std::ffi::c_int;
 use std::ptr;
 
 #[repr(C)]
@@ -90,7 +90,7 @@ pub extern "C" fn display_student(student: *const Student) {
 }
 
 #[no_mangle]
-pub extern "C" fn safe_create_student(
+pub fn safe_create_student(
     age: i32,
     grade: i32,
     district: i32,
@@ -110,18 +110,18 @@ pub extern "C" fn safe_create_student(
 }
 
 #[no_mangle]
-pub extern "C" fn safe_increase_student_age(student: &mut Student) -> i32 {
+pub fn safe_increase_student_age(student: &mut Student) -> i32 {
     student.age += 1;
     student.age
 }
 
 #[no_mangle]
-pub extern "C" fn safe_get_student_grade(student: &Student) -> i32 {
+pub fn safe_get_student_grade(student: &Student) -> i32 {
     student.grade
 }
 
 #[no_mangle]
-pub extern "C" fn safe_get_student_grade_ptr(student_ptr: *const Student) -> Option<i32> {
+pub fn safe_get_student_grade_ptr(student_ptr: *const Student) -> Option<i32> {
     if student_ptr.is_null() {
         None
     } else {
@@ -130,7 +130,7 @@ pub extern "C" fn safe_get_student_grade_ptr(student_ptr: *const Student) -> Opt
 }
 
 #[no_mangle]
-pub extern "C" fn safe_display_student(student: &Student) {
+pub fn safe_display_student(student: &Student) {
     println!("student: age: {} grade: {}", student.age, student.grade);
     if student.school.is_null() {
         println!("  school: empty");
