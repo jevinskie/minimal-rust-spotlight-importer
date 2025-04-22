@@ -184,10 +184,12 @@ impl MetadataImporterPluginType {
         unsafe { self.conduitInterface.as_ref() }.unwrap()
     }
     pub fn factory_id(&self) -> CFRetained<CFUUID> {
+        println!("MetadataImporterPluginType::factory_id self: {self:#?}");
         let nnfid = NonNull::new(self.factoryID).unwrap();
         unsafe { CFRetained::from_raw(nnfid) }
     }
     pub fn query_interface(&mut self, iid: CFRetained<CFUUID>, out: *mut LPVOID) -> HRESULT {
+        println!("MetadataImporterPluginType::query_interface self: {self:#?}");
         unsafe { self.conduitInterface.as_ref() }
             .unwrap()
             .query_interface_safe(self, iid, out)
