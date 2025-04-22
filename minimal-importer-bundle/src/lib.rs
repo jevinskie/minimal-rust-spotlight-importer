@@ -158,8 +158,10 @@ impl MDImporterInterfaceStruct {
         println!("query_interface_safe: handle: {handle:#?} iid: {iid:#?} out: {out:#?}");
         if iid == kMDImporterInterfaceID() || iid == IUnknownUUID() {
             handle.add_ref();
-            let out_typed = out.cast::<MetadataImporterPluginType>();
-            unsafe { *out_typed = *handle };
+            let out_typed = out.cast::<*mut MetadataImporterPluginType>();
+            unsafe {
+                *out_typed = handle.as_ptr();
+            };
             0 // S_OK
         } else {
             unsafe { *out = ptr::null_mut() };
