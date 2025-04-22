@@ -215,9 +215,9 @@ impl MetadataImporterPluginType {
             let ref_istruct = opt_ref_istruct.as_mut().unwrap();
             let ptb = unsafe { Box::from_raw(ref_istruct) };
             println!("MetadataImporterPluginType::release drop ptb: {self:#?} ptb: {ptb:#?}");
-            drop(ptb);
+            // drop(ptb);
             CFPlugIn::remove_instance_for_factory(Some(&fuuid));
-            drop(fuuid);
+            // drop(fuuid);
             rc
         }
     }
