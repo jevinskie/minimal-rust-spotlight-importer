@@ -150,6 +150,21 @@ impl MDImporterInterfaceStruct {
     pub fn as_ptr(&mut self) -> *mut MDImporterInterfaceStruct {
         self
     }
+    pub fn query_interface_safe(
+        &self,
+        handle: &mut MetadataImporterPluginType,
+        iid: CFRetained<CFUUID>,
+        out: *mut LPVOID,
+    ) -> HRESULT {
+        println!("query_interface_safe: handle: {handle:#?} iid: {iid:#?} out: {out:#?}");
+        if iid == kMDImporterInterfaceID() || iid == IUnknownUUID() {
+            handle.add_ref();
+            0 // S_OK
+        } else {
+            unsafe { *out = ptr::null_mut() };
+            1 // S_FALSE
+        }
+    }
 }
 
 #[repr(C)]
@@ -164,9 +179,19 @@ impl MetadataImporterPluginType {
     pub fn intf(&self) -> &MDImporterInterfaceStruct {
         unsafe { self.conduitInterface.as_ref() }.unwrap()
     }
+    // pub fn intf_mut(&mut self) -> &mut MDImporterInterfaceStruct {
+    //     unsafe { self.conduitInterface.as_ref() }.unwrap().as_mut()
+    // }
     pub fn factory_id(&self) -> CFRetained<CFUUID> {
         let nnfid = NonNull::new(self.factoryID).unwrap();
         unsafe { CFRetained::from_raw(nnfid) }
+    }
+    pub fn query_interface(&mut self, iid: CFRetained<CFUUID>, out: *mut LPVOID) -> HRESULT {
+        let im = unsafe { self.conduitInterface.as_ref() }.unwrap();
+        im.query_interface_safe(self, iid, out)
+    }
+    pub fn add_ref(&mut self) -> ULONG {
+        self.intf().add_ref.unwrap()(self)
     }
 }
 
