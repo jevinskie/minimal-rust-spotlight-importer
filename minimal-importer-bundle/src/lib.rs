@@ -2,6 +2,7 @@
 // #![feature(extern_types)]
 // #![feature(no_sanitize)]
 // #![feature(box_as_ptr)]
+#![allow(non_snake_case)]
 
 use log::{LevelFilter, info};
 use objc2_core_foundation::{
@@ -147,9 +148,6 @@ impl AsMut<MDImporterInterfaceStruct> for MDImporterInterfaceStruct {
 }
 
 impl MDImporterInterfaceStruct {
-    pub fn as_ptr(&mut self) -> *mut MDImporterInterfaceStruct {
-        self
-    }
     pub fn query_interface_safe(
         &self,
         handle: &mut MetadataImporterPluginType,
@@ -159,6 +157,8 @@ impl MDImporterInterfaceStruct {
         println!("query_interface_safe: handle: {handle:#?} iid: {iid:#?} out: {out:#?}");
         if iid == kMDImporterInterfaceID() || iid == IUnknownUUID() {
             handle.add_ref();
+            let out_typed = out.cast::<MetadataImporterPluginType>();
+            unsafe { *out_typed = *handle };
             0 // S_OK
         } else {
             unsafe { *out = ptr::null_mut() };
@@ -176,22 +176,27 @@ pub struct MetadataImporterPluginType {
 }
 
 impl MetadataImporterPluginType {
+    pub fn as_ptr(&mut self) -> *mut MetadataImporterPluginType {
+        self
+    }
     pub fn intf(&self) -> &MDImporterInterfaceStruct {
         unsafe { self.conduitInterface.as_ref() }.unwrap()
     }
-    // pub fn intf_mut(&mut self) -> &mut MDImporterInterfaceStruct {
-    //     unsafe { self.conduitInterface.as_ref() }.unwrap().as_mut()
-    // }
     pub fn factory_id(&self) -> CFRetained<CFUUID> {
         let nnfid = NonNull::new(self.factoryID).unwrap();
         unsafe { CFRetained::from_raw(nnfid) }
     }
     pub fn query_interface(&mut self, iid: CFRetained<CFUUID>, out: *mut LPVOID) -> HRESULT {
-        let im = unsafe { self.conduitInterface.as_ref() }.unwrap();
-        im.query_interface_safe(self, iid, out)
+        unsafe { self.conduitInterface.as_ref() }
+            .unwrap()
+            .query_interface_safe(self, iid, out)
     }
     pub fn add_ref(&mut self) -> ULONG {
-        self.intf().add_ref.unwrap()(self)
+        self.refCount.checked_add(1).unwrap()
+    }
+    pub fn release(&mut self) -> ULONG {
+        panic!("unimplemented");
+        0
     }
 }
 
@@ -200,20 +205,14 @@ extern "C-unwind" fn com_query_interface(
     iid: REFIID,
     out: *mut LPVOID,
 ) -> HRESULT {
-    let t = unsafe { this.as_mut() }.unwrap();
     let iuuid = unsafe { CFUUID::from_uuid_bytes(kCFAllocatorDefault, iid) }.unwrap();
-    t.query_interface(iuuid, out)
+    unsafe { this.as_mut() }
+        .unwrap()
+        .query_interface(iuuid, out)
 }
 
 extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
-    let pt = &mut unsafe { *this };
-    println!("com_add_ref this: {this:#?} pt: {pt:#?}");
-    if pt.refCount < 1 {
-        panic!("ref count underflow");
-    }
-    pt.refCount = pt.refCount.checked_add(1).unwrap();
-    println!("com_add_ref end this: {this:#?} pt: {pt:#?}");
-    pt.refCount as ULONG
+    unsafe { this.as_mut() }.unwrap().add_ref()
 }
 
 fn com_add_ref_safe(this: &mut MetadataImporterPluginType) -> ULONG {
