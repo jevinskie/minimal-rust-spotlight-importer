@@ -200,28 +200,9 @@ extern "C-unwind" fn com_query_interface(
     iid: REFIID,
     out: *mut LPVOID,
 ) -> HRESULT {
-    let mut nnthis = NonNull::new(this).unwrap();
-    let t = unsafe { nnthis.as_ref() };
-    let mt = unsafe { nnthis.as_mut() };
+    let t = unsafe { this.as_mut() }.unwrap();
     let iuuid = unsafe { CFUUID::from_uuid_bytes(kCFAllocatorDefault, iid) }.unwrap();
-    let nnout = NonNull::new(out).unwrap();
-    let ci = t.conduitInterface;
-    println!("com_query_interface: this: {this:#?} t.conduitInterface: {ci:#?} uuid: {iuuid:#?}");
-    if iuuid == kMDImporterInterfaceID() || iuuid == IUnknownUUID() {
-        let t2 = t.conduitInterface.cast_mut();
-        let t3 = NonNull::new(t2).unwrap();
-        let t4 = unsafe { t3.as_ref() };
-        // let add_ref_fptr = t4.add_ref.unwrap();
-        // unsafe { add_ref_fptr(this) };
-        com_add_ref_safe(mt);
-        let vthis: *mut c_void = nnthis.as_ptr().cast();
-        println!("com_query_interface returning S_OK this: {this:#?} vthis: {vthis:#?} t: {t:#?}");
-        unsafe { *nnout.as_ptr() = vthis };
-        0 // S_OK
-    } else {
-        unsafe { *nnout.as_ptr() = ptr::null_mut() };
-        1 // S_FALSE
-    }
+    t.query_interface(iuuid, out)
 }
 
 extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG {
