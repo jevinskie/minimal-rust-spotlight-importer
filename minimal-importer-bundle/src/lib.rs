@@ -134,12 +134,40 @@ pub struct MDImporterInterfaceStruct {
 unsafe impl Send for MDImporterInterfaceStruct {}
 unsafe impl Sync for MDImporterInterfaceStruct {}
 
+impl AsRef<MDImporterInterfaceStruct> for MDImporterInterfaceStruct {
+    fn as_ref(&self) -> &MDImporterInterfaceStruct {
+        &self
+    }
+}
+
+impl AsMut<MDImporterInterfaceStruct> for MDImporterInterfaceStruct {
+    fn as_mut(&mut self) -> &mut MDImporterInterfaceStruct {
+        self
+    }
+}
+
+impl MDImporterInterfaceStruct {
+    pub fn as_ptr(&mut self) -> *mut MDImporterInterfaceStruct {
+        self
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct MetadataImporterPluginType {
     conduitInterface: *const MDImporterInterfaceStruct,
     factoryID: *mut CFUUID,
     refCount: u32,
+}
+
+impl MetadataImporterPluginType {
+    pub fn intf(&self) -> &MDImporterInterfaceStruct {
+        unsafe { self.conduitInterface.as_ref() }.unwrap()
+    }
+    pub fn factory_id(&self) -> CFRetained<CFUUID> {
+        let nnfid = NonNull::new(self.factoryID).unwrap();
+        unsafe { CFRetained::from_raw(nnfid) }
+    }
 }
 
 extern "C-unwind" fn com_query_interface(
@@ -193,6 +221,31 @@ fn com_add_ref_safe(this: &mut MetadataImporterPluginType) -> ULONG {
 }
 
 extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
+    let pt = &mut unsafe { *this };
+    println!("com_release this: {this:#?} pt: {pt:#?}");
+    if pt.refCount < 1 {
+        panic!("ref count underflow");
+    }
+    pt.refCount = pt.refCount.checked_sub(1).unwrap();
+    if pt.refCount != 0 {
+        println!("com_release end (no-dealloc) this: {this:#?} pt: {pt:#?}");
+        pt.refCount as ULONG
+    } else {
+        println!("com_release end (dealloc) this: {this:#?} pt: {pt:#?}");
+        let fuuid = unsafe { CFRetained::from_raw(NonNull::new(pt.factoryID).unwrap()) };
+        pt.factoryID = ptr::null_mut();
+        let ptb = unsafe { Box::from_raw(this) };
+        println!("com_release drop ptb: {this:#?} pt: {pt:#?} ptb: {ptb:#?}");
+        drop(ptb);
+        println!("com_release call remove_instance_for_factory for {fuuid:#?}");
+        CFPlugIn::remove_instance_for_factory(Some(&fuuid));
+        println!("com_release drop fuuid: {fuuid:#?}");
+        drop(fuuid);
+        0
+    }
+}
+
+extern "C-unwind" fn com_release2(this: *mut MetadataImporterPluginType) -> ULONG {
     let pt = &mut unsafe { *this };
     println!("com_release this: {this:#?} pt: {pt:#?}");
     if pt.refCount < 1 {
@@ -301,11 +354,4 @@ pub extern "C-unwind" fn MetadataImporterPluginFactory(
         println!("MetadataImporterPluginFactory returning r: {r:#?} dr: {dr:#?}");
         r
     }
-}
-
-#[unsafe(no_mangle)]
-pub extern "C-unwind" fn ReturnCFString() -> *mut CFString {
-    let r = CFString::from_static_str("hellooo");
-    println!("ReturnCFString r: {r}");
-    CFRetained::as_ptr(&r).as_ptr()
 }

@@ -1,3 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["minimal-importer", "minimal-importer-app", "minimal-importer-bundle", "minimal-importer-util", "trivial-ffi-sandbox"]
+
+[profile.release]
+lto = true
+codegen-units = 1
