@@ -211,13 +211,7 @@ impl MetadataImporterPluginType {
         } else {
             let fuuid = unsafe { CFRetained::from_raw(NonNull::new(self.factoryID).unwrap()) };
             self.factoryID = ptr::null_mut();
-            let mut opt_ref_istruct = unsafe { self.conduitInterface.as_ref() };
-            let ref_istruct = opt_ref_istruct.as_mut().unwrap();
-            let ptb = unsafe { Box::from_raw(ref_istruct) };
-            println!("MetadataImporterPluginType::release drop ptb: {self:#?} ptb: {ptb:#?}");
-            // drop(ptb);
             CFPlugIn::remove_instance_for_factory(Some(&fuuid));
-            // drop(fuuid);
             rc
         }
     }
