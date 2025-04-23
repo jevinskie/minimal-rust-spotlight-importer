@@ -4,6 +4,7 @@
 // #![feature(box_as_ptr)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
+#![feature(stmt_expr_attributes)]
 
 use log::{LevelFilter, info};
 use objc2_core_foundation::{
@@ -19,99 +20,39 @@ use std::ptr::NonNull;
 const kMDItemDescription: &str = "kMDItemDescription";
 
 fn kMDImporterTypeID() -> CFRetained<CFUUID> {
-    CFUUID::constant_uuid_with_bytes(
-        unsafe { kCFAllocatorDefault },
-        0x8B,
-        0x08,
-        0xC4,
-        0xBF,
-        0x41,
-        0x5B,
-        0x11,
-        0xD8,
-        0xB3,
-        0xF9,
-        0x00,
-        0x03,
-        0x93,
-        0x67,
-        0x26,
-        0xFC,
-    )
-    .unwrap()
+    #[rustfmt::skip]
+    CFUUID::constant_uuid_with_bytes(unsafe { kCFAllocatorDefault },
+        0x8B, 0x08, 0xC4, 0xBF, 0x41, 0x5B, 0x11, 0xD8,
+        0xB3, 0xF9, 0x00, 0x03, 0x93, 0x67, 0x26, 0xFC,
+    ).unwrap()
 }
 
 fn kMDImporterInterfaceID() -> CFRetained<CFUUID> {
-    CFUUID::constant_uuid_with_bytes(
-        unsafe { kCFAllocatorDefault },
-        0x6E,
-        0xBC,
-        0x27,
-        0xC4,
-        0x89,
-        0x9C,
-        0x11,
-        0xD8,
-        0x84,
-        0xAE,
-        0x00,
-        0x03,
-        0x93,
-        0x67,
-        0x26,
-        0xFC,
-    )
-    .unwrap()
+    #[rustfmt::skip]
+    CFUUID::constant_uuid_with_bytes(unsafe { kCFAllocatorDefault },
+        0x6E, 0xBC, 0x27, 0xC4, 0x89, 0x9C, 0x11, 0xD8,
+        0x84, 0xAE, 0x00, 0x03, 0x93, 0x67, 0x26, 0xFC,
+    ).unwrap()
 }
 
 fn MetadataImporterPluginFactoryUUID() -> CFRetained<CFUUID> {
-    CFUUID::constant_uuid_with_bytes(
-        unsafe { kCFAllocatorDefault },
-        0xd8,
-        0x78,
-        0x57,
-        0xf7,
-        0xb0,
-        0xc0,
-        0x4c,
-        0x70,
-        0x9b,
-        0x8f,
-        0x2e,
-        0x3d,
-        0x8e,
-        0x55,
-        0x19,
-        0x8c,
-    )
-    .unwrap()
+    #[rustfmt::skip]
+    CFUUID::constant_uuid_with_bytes(unsafe { kCFAllocatorDefault },
+        0xd8, 0x78, 0x57, 0xf7, 0xb0, 0xc0, 0x4c, 0x70,
+        0x9b, 0x8f, 0x2e, 0x3d, 0x8e, 0x55, 0x19, 0x8c,
+    ).unwrap()
 }
 
 fn IUnknownUUID() -> CFRetained<CFUUID> {
-    CFUUID::constant_uuid_with_bytes(
-        unsafe { kCFAllocatorDefault },
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0xC0,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x46,
-    )
-    .unwrap()
+    #[rustfmt::skip]
+    CFUUID::constant_uuid_with_bytes(unsafe { kCFAllocatorDefault },
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46,
+    ).unwrap()
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub struct MDImporterInterfaceStruct {
     _reserved: *mut c_void,
     query_interface: Option<
