@@ -16,17 +16,17 @@ unsafe impl Sync for VTable {}
 // apparently Send isn't needed?
 // unsafe impl Send for VTable {}
 
-// impl AsRef<VTable> for VTable {
-//     fn as_ref(&self) -> &VTable {
-//         &self
-//     }
-// }
+impl AsRef<VTable> for VTable {
+    fn as_ref(&self) -> &VTable {
+        &self
+    }
+}
 
-// impl AsMut<VTable> for VTable {
-//     fn as_mut(&mut self) -> &mut VTable {
-//         self
-//     }
-// }
+impl AsMut<VTable> for VTable {
+    fn as_mut(&mut self) -> &mut VTable {
+        self
+    }
+}
 
 #[repr(C)]
 #[derive(Debug)]
@@ -36,9 +36,9 @@ pub struct Plugin {
 }
 
 impl Plugin {
-    pub fn as_ptr(&mut self) -> *mut Plugin {
-        self
-    }
+    // pub fn as_ptr(&mut self) -> *mut Plugin {
+    //     self
+    // }
     pub fn intf(&self) -> &VTable {
         unsafe { self.vtbl_ptr.as_ref() }.unwrap()
     }
@@ -59,23 +59,30 @@ impl Plugin {
             rc
         }
     }
+    pub fn get_refcnt(&self) -> u32 {
+        println!("Plugin::get_refcnt self: {self:#?}");
+        self.ref_cnt
+    }
 }
 
 extern "C-unwind" fn com_add_ref(this: *mut Plugin) -> u32 {
-    unsafe { this.as_mut() }.unwrap().add_ref()
+    println!("com_add_ref this: {this:#?}");
+    let hndl = unsafe { this.as_mut() }.unwrap();
+    println!("com_add_ref this: {this:#?} hndl: {hndl:#?}");
+    hndl.add_ref()
 }
 
 extern "C-unwind" fn com_release(this: *mut Plugin) -> u32 {
-    // let pt = &mut unsafe { *this };
-    // println!("com_release this: {this:#?} pt: {pt:#?}");
-    // unsafe { this.as_mut() }.unwrap().release()
     let hndl = unsafe { this.as_mut() }.unwrap();
-    println!("com_release FAKE this: {this:#?} hndl: {hndl:#?}");
+    println!("com_release this: {this:#?} hndl: {hndl:#?}");
     hndl.release()
 }
 
 extern "C-unwind" fn com_get_refcnt(this: *const Plugin) -> u32 {
-    unsafe { this.as_ref() }.unwrap().ref_cnt
+    println!("com_get_refcnt this: {this:#?}");
+    let hndl = unsafe { this.as_ref() }.unwrap();
+    println!("com_get_refcnt this: {this:#?} hndl: {hndl:#?}");
+    hndl.get_refcnt()
 }
 
 static INTERFACE: VTable = VTable {
@@ -126,17 +133,37 @@ fn main() {
     if good_plugin.is_null() {
         println!("good_plugin returned null unexpectedly");
     } else {
-        let good_plugin_opt = unsafe { good_plugin.as_ref() };
+        let good_plugin_opt = unsafe { good_plugin.as_mut() };
         match good_plugin_opt {
             None => {
                 println!("good_plugin_opt was None")
             }
-            Some(x) => {
-                println!("good_plugin_opt is: {x:#?}")
+            Some(p) => {
+                println!("good_plugin_opt is: {p:#?}");
+                let rc0 = p.get_refcnt();
+                println!("rc0: {rc0} p: {p:#?}");
+                let rc_inc0 = p.add_ref();
+                let rc1 = p.get_refcnt();
+                println!("rc_inc0: {rc_inc0} rc1: {rc1} p: {p:#?}");
+                let rc_inc1 = p.add_ref();
+                let rc2 = p.get_refcnt();
+                println!("rc_inc1: {rc_inc1} rc2: {rc2} p: {p:#?}");
+                let rc_dec1 = p.release();
+                let rc3 = p.get_refcnt();
+                println!("rc_dec1: {rc_dec1} rc3: {rc3} p: {p:#?}");
+                let rc_dec0 = p.release();
+                let rc4 = p.get_refcnt();
+                println!("rc_dec0: {rc_dec0} rc4: {rc4} p: {p:#?}");
+                let rc_decn1 = p.release();
+                println!("rc_decn1: {rc_decn1} p: {p:#?}");
+                let rc5 = p.get_refcnt();
+                println!("rc5: {rc5} p: {p:#?}");
+                let rc_decn2 = p.release();
+                println!("rc_decn2: {rc_decn2} p: {p:#?}");
+                let rc6 = p.get_refcnt();
+                println!("rc6: {rc6} p: {p:#?}");
             }
         }
-        println!(
-            "good_plugin returned non-null as expected: {good_plugin:#?} {good_plugin_opt:#?}"
-        );
+        println!("good_plugin returned non-null as expected: {good_plugin:#?}");
     }
 }
