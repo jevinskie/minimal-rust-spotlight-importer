@@ -56,8 +56,8 @@ impl Plugin {
             rc
         } else {
             println!("Plugin::release RC zeroed, should free here");
-            let b = unsafe { Box::from_raw(self) };
-            println!("Plugin::release Box::from_raw(self): {b:#?}");
+            // let b = unsafe { Box::from_raw(self) };
+            // println!("Plugin::release Box::from_raw(self): {b:#?}");
             rc
         }
     }
