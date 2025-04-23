@@ -177,8 +177,9 @@ extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG
     // let pt = &mut unsafe { *this };
     // println!("com_release this: {this:#?} pt: {pt:#?}");
     // unsafe { this.as_mut() }.unwrap().release()
-    println!("com_release this: {this:#?}");
-    1
+    let hndl = unsafe { this.as_mut() }.unwrap();
+    println!("com_release FAKE this: {this:#?} hndl: {hndl:#?}");
+    hndl.release()
 }
 
 extern "C-unwind" fn com_importer_import_data(
