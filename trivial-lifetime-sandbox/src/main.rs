@@ -56,6 +56,8 @@ impl Plugin {
             rc
         } else {
             println!("Plugin::release RC zeroed, should free here");
+            let b = unsafe { Box::from_raw(self) };
+            println!("Plugin::release Box::from_raw(self): {b:#?}");
             rc
         }
     }
@@ -73,6 +75,7 @@ extern "C-unwind" fn com_add_ref(this: *mut Plugin) -> u32 {
 }
 
 extern "C-unwind" fn com_release(this: *mut Plugin) -> u32 {
+    println!("com_release this: {this:#?}");
     let hndl = unsafe { this.as_mut() }.unwrap();
     println!("com_release this: {this:#?} hndl: {hndl:#?}");
     hndl.release()
