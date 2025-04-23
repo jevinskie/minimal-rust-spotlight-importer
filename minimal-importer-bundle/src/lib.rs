@@ -112,7 +112,7 @@ impl MDImporterInterfaceStruct {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub struct MetadataImporterPluginType {
     conduitInterface: *const MDImporterInterfaceStruct,
     factoryID: *mut CFUUID,
@@ -174,9 +174,11 @@ extern "C-unwind" fn com_add_ref(this: *mut MetadataImporterPluginType) -> ULONG
 }
 
 extern "C-unwind" fn com_release(this: *mut MetadataImporterPluginType) -> ULONG {
-    let pt = &mut unsafe { *this };
-    println!("com_release this: {this:#?} pt: {pt:#?}");
-    unsafe { this.as_mut() }.unwrap().release()
+    // let pt = &mut unsafe { *this };
+    // println!("com_release this: {this:#?} pt: {pt:#?}");
+    // unsafe { this.as_mut() }.unwrap().release()
+    println!("com_release this: {this:#?}");
+    1
 }
 
 extern "C-unwind" fn com_importer_import_data(
