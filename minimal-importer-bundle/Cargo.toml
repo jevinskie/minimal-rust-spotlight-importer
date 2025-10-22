@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-log = {version = "0.4.27", features = ["max_level_trace", "release_max_level_trace", "std"]}
-objc2-core-foundation = "0.3.1"
+log = {version = "0.4.28", features = ["max_level_trace", "release_max_level_trace", "std"]}
+objc2-core-foundation = "0.3.2"
 oslog = "0.2.0"
 
 [lib]
